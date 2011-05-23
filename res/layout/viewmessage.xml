@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageId" android:text="Message: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageIdText" android:text="x (n'th of m) in y" android:textStyle="bold"  android:textColor="#00ffff"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageDate" android:text="Date: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageDateText" android:text="DD MMM YYYY - HH:MM:SS" android:textStyle="bold" android:textColor="#00ff00" android:enabled="true"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageFrom" android:text="From: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageFromText" android:text="xxx" android:textStyle="bold"  android:textColor="#00ff00"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageTo" android:text="To: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageToText" android:text="yyy" android:textStyle="bold" android:textColor="#00ff00"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageSubject" android:text="Subject: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageSubjectText" android:text="zzz" android:textStyle="bold" android:textColor="#00ff00"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageInReplyTo" android:text="In-Reply-To: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageInReplyToText" android:text="x, y, z" android:textStyle="bold" android:textColor="#00ffff"></TextView>
+    </TableRow>
+    <TableRow>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageRepliedToIn" android:text="Replied-To-In: "></TextView>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageRepliedToInText" android:text="x, y, z" android:textStyle="bold" android:textColor="#00ffff"></TextView>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <RelativeLayout android:gravity="bottom" android:layout_width="wrap_content" android:layout_height="wrap_content">
+	    <TextView android:id="@+id/messageBodyText" android:text="blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah
+blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah" android:scrollbars="vertical" android:layout_height="wrap_content" android:layout_above="@+id/messagePrevButton" android:layout_margin="5dip" android:layout_width="fill_parent" android:gravity="top"></TextView>
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/messagePrevButton" android:text="@string/prev" android:layout_toLeftOf="@+id/messageNextButton" android:layout_alignParentBottom="true"></Button>
+        <Button android:id="@+id/messageNextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/next" android:layout_toLeftOf="@+id/messageReplyButton" android:layout_alignParentBottom="true"></Button>
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/messageReplyButton" android:text="@string/reply" android:layout_alignParentRight="true" android:layout_alignParentBottom="true"></Button>
+    </RelativeLayout>
+</TableLayout>

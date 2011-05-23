@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="org.ua2.guantanamo"
+      android:versionCode="2" android:versionName="0.2">
+<uses-permission android:name="android.permission.INTERNET" />
+
+    <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
+        <activity android:name=".GUAntanamo"
+                  android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="GUAntanamoSettings" android:label="@string/save"></activity>
+        <activity android:name="GUAntanamoFolder"></activity>
+        <activity android:name="GUAntanamoViewMessage"></activity>
+        <activity android:name="GUAntanamoPostMessage"></activity>
+
+    </application>
+</manifest>

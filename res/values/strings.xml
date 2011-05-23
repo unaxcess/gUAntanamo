@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">gUAntanamo</string>
+    <string name="url">URL</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="save">Save</string>
+    <string name="no_folders">No folders</string>
+    <string name="no_messages">No messages</string>
+    <string name="cancel">Cancel</string>
+    <string name="prev_thread">Prev Thread</string>
+    <string name="prev_msg">Prev Msg</string>
+    <string name="next_msg">Next Msg</string>
+    <string name="next_thread">Next Thread</string>
+    <string name="post">Post</string>
+    <string name="reply">Reply</string>
+    <string name="prev">Prev</string>
+    <string name="next">Next</string>
+    <string name="folder">Folder</string>
+</resources>

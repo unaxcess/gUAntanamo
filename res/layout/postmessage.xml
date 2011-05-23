@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <TableRow android:layout_width="fill_parent">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageFolder" android:text="@string/folder"></TextView>
+    <Spinner android:layout_weight="1" android:layout_height="wrap_content" android:id="@+id/messageFolderList" android:layout_width="0dp"></Spinner>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <TableRow android:layout_width="fill_parent">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageTo" android:text="To: "></TextView>
+    <EditText android:layout_height="wrap_content" android:layout_width="0dp" android:layout_weight="1" android:id="@+id/messageToText"></EditText>
+    </TableRow>
+    <TableRow android:layout_width="fill_parent">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageSubject" android:text="Subject: "></TextView>
+    <EditText android:layout_height="wrap_content" android:layout_width="0dp" android:layout_weight="1" android:id="@+id/messageSubjectText"></EditText>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <TableRow>
+    </TableRow>
+    <RelativeLayout android:gravity="bottom" android:layout_width="wrap_content" android:layout_height="wrap_content">
+	    <EditText android:id="@+id/messageBodyText" android:text="blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah
+blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah" android:scrollbars="vertical" android:layout_height="wrap_content" android:layout_above="@+id/messageActionButton" android:layout_margin="5dip" android:layout_width="fill_parent" android:gravity="top"></EditText>
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Action" android:layout_toLeftOf="@+id/messageCancelButton" android:layout_alignParentBottom="true" android:id="@+id/messageActionButton"></Button>
+        <Button android:id="@+id/messageCancelButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentRight="true" android:text="@string/cancel" android:layout_alignParentBottom="true"></Button>
+    </RelativeLayout>
+</TableLayout>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/settingsUrl" android:text="@string/url"></TextView>
+    <EditText android:layout_height="wrap_content" android:text="" android:layout_width="fill_parent" android:id="@+id/settingsUrlText"></EditText>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/settingsUsername" android:text="@string/username"></TextView>
+    <EditText android:layout_height="wrap_content" android:text="" android:layout_width="fill_parent" android:id="@+id/settingsUsernameText"></EditText>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/password" android:id="@+id/settingsPassword"></TextView>
+    <EditText android:layout_height="wrap_content" android:text="" android:layout_width="fill_parent" android:id="@+id/settingsPasswordText" android:password="true"></EditText>
+    <LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content">
+	    <Button android:layout_width="wrap_content" android:id="@+id/settingsSaveButton" android:layout_height="wrap_content" android:text="@string/save"></Button>
+	    <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/settingsCancelButton" android:text="@string/cancel"></Button>
+    </LinearLayout>
+</LinearLayout>
