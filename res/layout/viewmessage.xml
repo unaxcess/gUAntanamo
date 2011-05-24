@@ -48,7 +48,7 @@ blah
 blah
 blah
 blah
-blah" android:scrollbars="vertical" android:layout_height="wrap_content" android:layout_above="@+id/messagePrevButton" android:layout_margin="5dip" android:layout_width="fill_parent" android:gravity="top"></TextView>
+blah" android:scrollbars="vertical" android:layout_height="wrap_content" android:layout_above="@+id/messagePrevButton" android:layout_margin="5dip" android:layout_width="fill_parent" android:layout_alignParentTop="true"></TextView>
         <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/messagePrevButton" android:text="@string/prev" android:layout_toLeftOf="@+id/messageNextButton" android:layout_alignParentBottom="true"></Button>
         <Button android:id="@+id/messageNextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/next" android:layout_toLeftOf="@+id/messageReplyButton" android:layout_alignParentBottom="true"></Button>
         <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/messageReplyButton" android:text="@string/reply" android:layout_alignParentRight="true" android:layout_alignParentBottom="true"></Button>
