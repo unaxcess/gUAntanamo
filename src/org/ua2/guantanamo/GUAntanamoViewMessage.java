@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -176,21 +177,46 @@ public class GUAntanamoViewMessage extends Activity {
 				        TextView toText = (TextView)findViewById(R.id.messageToText);
 				        if(!message.isNull("to")) {
 				        	toText.setText(message.getString("to"));
+				        	findViewById(R.id.messageTo).setVisibility(View.VISIBLE);
 				        } else {
 				        	findViewById(R.id.messageTo).setVisibility(View.GONE);
-				        	toText.setVisibility(View.GONE);
+				        	// toText.setVisibility(View.GONE);
 				        }
 				        
 				        TextView subjectText = (TextView)findViewById(R.id.messageSubjectText);
 				        if(!message.isNull("subject")) {
 				        	subjectText.setText(message.getString("subject"));
+				        	findViewById(R.id.messageSubject).setVisibility(View.VISIBLE);
 				        } else {
-				        	subjectText.setVisibility(View.GONE);
+				        	//subjectText.setVisibility(View.GONE);
+				        	findViewById(R.id.messageSubject).setVisibility(View.GONE);
 				        }
 				        
 				        TextView inReplyToText = (TextView)findViewById(R.id.messageInReplyToText);
+				        if(!message.isNull("inReplyTo")) {
+				        	StringBuilder inReplyToStringBuilder = new StringBuilder(message.getString("inReplyTo"));
+				        	
+				        	JSONArray inReplyToArray = message.optJSONArray("inReplyToHierarchy");
+				        	if(inReplyToArray != null) {
+				        		int replyArraySize = inReplyToArray.length();
+				        		
+				        		if(replyArraySize > 1)
+				        		{
+				        			inReplyToStringBuilder
+				        				.append(", plus ")
+				        				.append(replyArraySize - 1)
+				        				.append(" more");
+				        		}
+				        	}
+				        	
+				        	inReplyToText.setText(inReplyToStringBuilder.toString());
+				        	findViewById(R.id.messageInReplyTo).setVisibility(View.VISIBLE);
+				        } else {
+				        	findViewById(R.id.messageInReplyTo).setVisibility(View.GONE);			        	
+				        }
 				        
 				        TextView repliedToInText = (TextView)findViewById(R.id.messageRepliedToInText);
+				        findViewById(R.id.messageRepliedToIn).setVisibility(View.GONE);
 				        
 				        TextView bodyText = (TextView)findViewById(R.id.messageBodyText);
 				        if(!message.isNull("body")) {

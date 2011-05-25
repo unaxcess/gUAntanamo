@@ -16,20 +16,20 @@
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageFrom" android:text="From: "></TextView>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageFromText" android:text="xxx" android:textStyle="bold"  android:textColor="#00ff00"></TextView>
     </TableRow>
-    <TableRow>
-    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageTo" android:text="To: "></TextView>
+    <TableRow android:id="@+id/messageTo">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="To: "></TextView>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageToText" android:text="yyy" android:textStyle="bold" android:textColor="#00ff00"></TextView>
     </TableRow>
-    <TableRow>
-    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageSubject" android:text="Subject: "></TextView>
+    <TableRow android:id="@+id/messageSubject">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="Subject: "></TextView>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageSubjectText" android:text="zzz" android:textStyle="bold" android:textColor="#00ff00"></TextView>
     </TableRow>
-    <TableRow>
-    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageInReplyTo" android:text="In-Reply-To: "></TextView>
+    <TableRow android:id="@+id/messageInReplyTo">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="In-Reply-To: "></TextView>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageInReplyToText" android:text="x, y, z" android:textStyle="bold" android:textColor="#00ffff"></TextView>
     </TableRow>
-    <TableRow>
-    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageRepliedToIn" android:text="Replied-To-In: "></TextView>
+    <TableRow android:id="@+id/messageRepliedToIn">
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="Replied-To-In: "></TextView>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/messageRepliedToInText" android:text="x, y, z" android:textStyle="bold" android:textColor="#00ffff"></TextView>
     </TableRow>
     <TableRow>
