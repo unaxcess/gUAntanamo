@@ -188,7 +188,6 @@ public class GUAntanamoViewMessage extends Activity {
 				        	subjectText.setText(message.getString("subject"));
 				        	findViewById(R.id.messageSubject).setVisibility(View.VISIBLE);
 				        } else {
-				        	//subjectText.setVisibility(View.GONE);
 				        	findViewById(R.id.messageSubject).setVisibility(View.GONE);
 				        }
 				        
