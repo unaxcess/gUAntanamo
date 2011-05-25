@@ -51,6 +51,16 @@ public class GUAntanamoViewMessage extends Activity {
 		return suffix;
 	}
 	
+	public Object onRetainNonConfigurationInstance()
+	{
+		// If the screen orientation, availability of keyboard, etc
+		// changes, Android will kill and restart the Activity. This
+		// stores its data so we can reuse it when the Activity
+		// restarts
+		
+		return this;
+	}
+	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,10 +69,25 @@ public class GUAntanamoViewMessage extends Activity {
         
         TextView bodyText = (TextView)findViewById(R.id.messageBodyText);
         bodyText.setMovementMethod(new ScrollingMovementMethod());
-        
-        id = getIntent().getIntExtra("message", 0);
 
-        read = getIntent().getBooleanExtra("read", false);
+        GUAntanamoViewMessage retainedData = (GUAntanamoViewMessage) getLastNonConfigurationInstance();
+        
+		if (retainedData == null) {
+			// No retained data from the running config change
+
+			id = getIntent().getIntExtra("message", 0);
+
+			read = getIntent().getBooleanExtra("read", false);
+		} else {
+			// Retrieve stored data from before the running config changed
+		
+			id = retainedData.id;
+			read = retainedData.read;
+			pos = retainedData.pos;
+			message = retainedData.message;
+
+			displayMessage(message);
+		}
         
         Button prevButton = (Button)findViewById(R.id.messagePrevButton);
         prevButton.setOnClickListener(new View.OnClickListener() {
@@ -112,7 +137,11 @@ public class GUAntanamoViewMessage extends Activity {
 			}
         });
 
-        showMessage(0);
+		if (retainedData == null) {
+			// If we don't have any stored data (ie, this isn't
+			// a running config change, fetch the message
+			showMessage(0);
+		}
 	}
 
 	private void showMessage(final int direction) {
@@ -162,78 +191,7 @@ public class GUAntanamoViewMessage extends Activity {
 				progress.dismiss();
 
 				if(error == null) {
-					try {
-						setTitle(message.getString("folder") + (read ? " [Re-read]" : ""));
-						
-				        TextView idText = (TextView)findViewById(R.id.messageIdText);
-				        idText.setText(message.getInt("id") + " (" + getSuffix(pos + 1) + " of " + GUAntanamo.getMessages().length() + ")");
-				        
-				        TextView dateText = (TextView)findViewById(R.id.messageDateText);
-				        dateText.setText(TIMESTAMP_FORMATTER.format(new Date(1000 * message.getLong("epoch"))));
-				        
-				        TextView fromText = (TextView)findViewById(R.id.messageFromText);
-				        fromText.setText(message.getString("from"));
-				        
-				        TextView toText = (TextView)findViewById(R.id.messageToText);
-				        if(!message.isNull("to")) {
-				        	toText.setText(message.getString("to"));
-				        	findViewById(R.id.messageTo).setVisibility(View.VISIBLE);
-				        } else {
-				        	findViewById(R.id.messageTo).setVisibility(View.GONE);
-				        	// toText.setVisibility(View.GONE);
-				        }
-				        
-				        TextView subjectText = (TextView)findViewById(R.id.messageSubjectText);
-				        if(!message.isNull("subject")) {
-				        	subjectText.setText(message.getString("subject"));
-				        	findViewById(R.id.messageSubject).setVisibility(View.VISIBLE);
-				        } else {
-				        	findViewById(R.id.messageSubject).setVisibility(View.GONE);
-				        }
-				        
-				        TextView inReplyToText = (TextView)findViewById(R.id.messageInReplyToText);
-				        if(!message.isNull("inReplyTo")) {
-				        	StringBuilder inReplyToStringBuilder = new StringBuilder(message.getString("inReplyTo"));
-				        	
-				        	JSONArray inReplyToArray = message.optJSONArray("inReplyToHierarchy");
-				        	if(inReplyToArray != null) {
-				        		int replyArraySize = inReplyToArray.length();
-				        		
-				        		if(replyArraySize > 1)
-				        		{
-				        			inReplyToStringBuilder
-				        				.append(", plus ")
-				        				.append(replyArraySize - 1)
-				        				.append(" more");
-				        		}
-				        	}
-				        	
-				        	inReplyToText.setText(inReplyToStringBuilder.toString());
-				        	findViewById(R.id.messageInReplyTo).setVisibility(View.VISIBLE);
-				        } else {
-				        	findViewById(R.id.messageInReplyTo).setVisibility(View.GONE);			        	
-				        }
-				        
-				        TextView repliedToInText = (TextView)findViewById(R.id.messageRepliedToInText);
-				        findViewById(R.id.messageRepliedToIn).setVisibility(View.GONE);
-				        
-				        TextView bodyText = (TextView)findViewById(R.id.messageBodyText);
-				        if(!message.isNull("body")) {
-				        	bodyText.setText(message.getString("body"));
-				        } else {
-				        	bodyText.setText("");
-				        }
-				        
-				        boolean read = GUAntanamo.getMessages().getJSONObject(pos).getBoolean("read");
-				        if(!read) {
-				        	GUAntanamo.getMessages().getJSONObject(pos).put("read", true);
-				        	GUAntanamo.getFolder().put("unread", GUAntanamo.getFolder().getInt("unread"));
-				        }
-			
-				        GUAntanamo.getClient().markMessage(id, true);
-					} catch(JSONException e) {
-						Log.e(TAG, "Cannot show message", e);
-					}
+					displayMessage(message);
 				} else {
 					AlertDialog.Builder builder = new AlertDialog.Builder(GUAntanamoViewMessage.this);
 					builder
@@ -251,4 +209,81 @@ public class GUAntanamoViewMessage extends Activity {
 		}.execute();
 	}
 
+	private void displayMessage(JSONObject message) {
+		try {
+			setTitle(message.getString("folder") + (read ? " [Re-read]" : ""));
+
+			TextView idText = (TextView) findViewById(R.id.messageIdText);
+			idText.setText(message.getInt("id") + " (" + getSuffix(pos + 1)
+					+ " of " + GUAntanamo.getMessages().length() + ")");
+
+			TextView dateText = (TextView) findViewById(R.id.messageDateText);
+			dateText.setText(TIMESTAMP_FORMATTER.format(new Date(1000 * message
+					.getLong("epoch"))));
+
+			TextView fromText = (TextView) findViewById(R.id.messageFromText);
+			fromText.setText(message.getString("from"));
+
+			TextView toText = (TextView) findViewById(R.id.messageToText);
+			if (!message.isNull("to")) {
+				toText.setText(message.getString("to"));
+				findViewById(R.id.messageTo).setVisibility(View.VISIBLE);
+			} else {
+				findViewById(R.id.messageTo).setVisibility(View.GONE);
+				// toText.setVisibility(View.GONE);
+			}
+
+			TextView subjectText = (TextView) findViewById(R.id.messageSubjectText);
+			if (!message.isNull("subject")) {
+				subjectText.setText(message.getString("subject"));
+				findViewById(R.id.messageSubject).setVisibility(View.VISIBLE);
+			} else {
+				findViewById(R.id.messageSubject).setVisibility(View.GONE);
+			}
+
+			TextView inReplyToText = (TextView) findViewById(R.id.messageInReplyToText);
+			if (!message.isNull("inReplyTo")) {
+				StringBuilder inReplyToStringBuilder = new StringBuilder(
+						message.getString("inReplyTo"));
+
+				JSONArray inReplyToArray = message
+						.optJSONArray("inReplyToHierarchy");
+				if (inReplyToArray != null) {
+					int replyArraySize = inReplyToArray.length();
+
+					if (replyArraySize > 1) {
+						inReplyToStringBuilder.append(", plus ")
+								.append(replyArraySize - 1).append(" more");
+					}
+				}
+
+				inReplyToText.setText(inReplyToStringBuilder.toString());
+				findViewById(R.id.messageInReplyTo).setVisibility(View.VISIBLE);
+			} else {
+				findViewById(R.id.messageInReplyTo).setVisibility(View.GONE);
+			}
+
+			TextView repliedToInText = (TextView) findViewById(R.id.messageRepliedToInText);
+			findViewById(R.id.messageRepliedToIn).setVisibility(View.GONE);
+
+			TextView bodyText = (TextView) findViewById(R.id.messageBodyText);
+			if (!message.isNull("body")) {
+				bodyText.setText(message.getString("body"));
+			} else {
+				bodyText.setText("");
+			}
+
+			boolean read = GUAntanamo.getMessages().getJSONObject(pos)
+					.getBoolean("read");
+			if (!read) {
+				GUAntanamo.getMessages().getJSONObject(pos).put("read", true);
+				GUAntanamo.getFolder().put("unread",
+						GUAntanamo.getFolder().getInt("unread"));
+			}
+
+			GUAntanamo.getClient().markMessage(id, true);
+		} catch (JSONException e) {
+			Log.e(TAG, "Cannot show message", e);
+		}
+	}
 }
