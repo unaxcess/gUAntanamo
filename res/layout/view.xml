@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:orientation="vertical"
+     android:layout_width="fill_parent"
+     android:layout_height="fill_parent"
+     >
+
+	<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	    android:orientation="vertical"
+	    android:layout_height="wrap_content"
+	    android:layout_width="fill_parent"
+	    android:layout_margin="5dp"
+	    >
+	    <TableRow>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="Date: "></TextView>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/viewDateText" android:text="DD MMM YYYY - HH:MM:SS" android:textStyle="bold" android:textColor="#00ff00" android:enabled="true"></TextView>
+	    </TableRow>
+	    <TableRow>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="From: "></TextView>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/viewFromText" android:text="xxx" android:textStyle="bold"  android:textColor="#00ff00"></TextView>
+	    </TableRow>
+	    <TableRow android:id="@+id/viewTo">
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="To: "></TextView>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/viewToText" android:text="yyy" android:textStyle="bold" android:textColor="#00ff00"></TextView>
+	    </TableRow>
+	    <TableRow android:id="@+id/viewSubject">
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="Subject: "></TextView>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/viewSubjectText" android:text="zzz" android:textStyle="bold" android:textColor="#00ff00" android:autoLink="web"></TextView>
+	    </TableRow>
+	    <TableRow android:id="@+id/viewReply">
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="In-Reply-To: "></TextView>
+	    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/viewInReplyToText" android:text="x, y, z" android:textStyle="bold" android:textColor="#00ffff"></TextView>
+	    </TableRow>
+	</TableLayout>
+
+    <TextView android:id="@+id/viewBodyText" android:text="blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah
+blah1 blah2 blah3 blah4 blah5 blah6 blah7 blah8 blah9 blah10 blah11 blah12 blah13 blah14 blah15
+blah
+blah
+blah
+blah
+blah
+blah" android:scrollbars="vertical" android:autoLink="web" android:layout_height="wrap_content" android:layout_width="fill_parent" android:layout_margin="5dp"></TextView>
+
+</LinearLayout>

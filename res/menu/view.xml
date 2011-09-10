@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="@string/unread" android:id="@+id/viewUnread"></item>
+    <item android:title="@string/all" android:id="@+id/viewAll"></item>
+    <item android:title="@string/refresh" android:id="@+id/viewRefresh"></item>
+    <item android:title="@string/post" android:id="@+id/viewPost"></item>
+    <item android:title="@string/reply" android:id="@+id/viewReply"></item>
+    <item android:id="@+id/viewPage" android:title="@string/page"></item>
+</menu>

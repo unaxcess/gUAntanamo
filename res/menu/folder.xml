@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/unread"  android:title="unread"></item>
-    <item android:id="@+id/all" android:title="all"></item>
-    <item android:id="@+id/refresh" android:title="refresh"></item>
-    <item android:id="@+id/post" android:title="post"></item>
+    <item android:title="@string/unread" android:id="@+id/folderUnread"></item>
+    <item android:title="@string/all" android:id="@+id/folderAll"></item>
+    <item android:title="@string/refresh" android:id="@+id/folderRefresh"></item>
+    <item android:title="@string/post" android:id="@+id/folderPost"></item>
+    <item android:id="@+id/folderPage" android:title="@string/page"></item>
 </menu>

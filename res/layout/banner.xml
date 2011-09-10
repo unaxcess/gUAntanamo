@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:orientation="vertical"
+     android:layout_width="fill_parent"
+     android:layout_height="fill_parent"
+     >
+    <TextView android:id="@+id/bannerText" android:typeface="monospace" android:layout_margin="5dp" android:text="blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah
+blah blah blah blah blah blah
+blah
+blah
+blah
+blah
+blah
+blah" android:scrollbars="vertical" android:layout_width="fill_parent"  android:layout_height="0dp" android:layout_weight="1" android:gravity="top" android:inputType="textMultiLine"></TextView>
+    <LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:background="@android:drawable/bottom_bar" android:gravity="center_vertical">
+        <Button android:layout_height="wrap_content" android:id="@+id/bannerOKButton" android:text="@string/ok" android:layout_width="fill_parent"></Button>
+    </LinearLayout>
+</LinearLayout>
