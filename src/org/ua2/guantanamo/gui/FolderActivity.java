@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.GUAntanamoMessaging.FolderThread;
@@ -17,10 +16,13 @@ import org.ua2.json.JSONMessage;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -38,6 +40,8 @@ public class FolderActivity extends ListActivity {
 	
 	private Calendar midnight;
 	private Calendar threeDays;
+	
+	private GestureDetector detector;
 
 	private static final String TAG = FolderActivity.class.getSimpleName();
 
@@ -59,7 +63,10 @@ public class FolderActivity extends ListActivity {
 		}
 	}
 
-	private void showFolder(final boolean refresh) throws JSONException {
+	private void showFolder(NavType direction, final boolean refresh) {
+		
+		folderName = GUAntanamoMessaging.getFolder(direction).getName();
+		
 		BackgroundCaller.run(this, "Getting messages...", new BackgroundWorker() {
 			@Override
 			public void during() throws Exception {
@@ -111,11 +118,7 @@ public class FolderActivity extends ListActivity {
 	private void setFolderView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, false);
 
-		try {
-			showFolder(false);
-		} catch(JSONException e) {
-			GUAntanamo.handleException(this, "Cannot show folder", e);
-		}
+		showFolder(null, false);
 	}
 
 	@Override
@@ -123,6 +126,14 @@ public class FolderActivity extends ListActivity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.folder);
+
+		DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		detector = new GestureDetector(new NavGestureDetector(metrics.widthPixels / 2, -1) {
+			@Override
+			protected void performAction(NavType direction) {
+				showFolder(direction, false);
+			}
+		});
 
 		FolderActivity retainedData = (FolderActivity)getLastNonConfigurationInstance();
 
@@ -145,11 +156,7 @@ public class FolderActivity extends ListActivity {
 		threeDays = Calendar.getInstance();
 		threeDays.add(Calendar.DATE, -3);
 
-		try {
-			showFolder(false);
-		} catch(JSONException e) {
-			GUAntanamo.handleException(this, "Cannot get folder", e);
-		}
+		showFolder(null, false);
 	}
 
 	public Object onRetainNonConfigurationInstance() {
@@ -192,11 +199,7 @@ public class FolderActivity extends ListActivity {
 			setFolderView(ViewMode.All);
 
 		} else if(item.getItemId() == R.id.folderRefresh) {
-			try {
-				showFolder(true);
-			} catch(JSONException e) {
-				GUAntanamo.handleException(this, "Cannot refresh folder", e);
-			}
+			showFolder(null, true);
 
 		} else if(item.getItemId() == R.id.folderPost) {
 			Intent intent = new Intent(this, MessagePostActivity.class);
@@ -220,11 +223,16 @@ public class FolderActivity extends ListActivity {
 		super.onActivityResult(requestCode, resultCode, intent);
 
 		if(requestCode == ACTIVITY_MESSAGE) {
-			try {
-				showFolder(false);
-			} catch(JSONException e) {
-				GUAntanamo.handleException(this, "Cannot show folder", e);
-			}
+			showFolder(null, false);
+		}
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		if(detector.onTouchEvent(event)) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 }

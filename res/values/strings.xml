@@ -20,4 +20,6 @@
     <string name="username">Username</string>
     <string name="save">Save</string>
     <string name="send">Send</string>
+    <string name="threads">Thread List</string>
+    <string name="messages">Message List</string>
 </resources>

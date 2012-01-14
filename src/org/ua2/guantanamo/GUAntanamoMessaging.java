@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import org.json.JSONException;
 import org.ua2.guantanamo.data.CacheFolders;
 import org.ua2.guantanamo.data.CacheMessages;
+import org.ua2.guantanamo.gui.NavType;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
 
@@ -51,15 +52,15 @@ public class GUAntanamoMessaging {
 		return name.toLowerCase();
 	}
 
-	private static boolean isThreadPosValid(int threadNum, int threadIndex) {
-		if(threadNum < 0) {
+	private static boolean isThreadPosValid(int location, int index) {
+		if(location < 0 || index < 0) {
 			return false;
-		} else if(threadNum >= currentFolder.threads.size()) {
+		} else if(location >= currentFolder.threads.size()) {
 			return false;
 		}
 		
-		int threadSize = currentFolder.threads.get(threadNum).messages.size();
-		if(threadIndex >= threadSize) {
+		int threadSize = currentFolder.threads.get(location).messages.size();
+		if(index >= threadSize) {
 			return false;
 		}
 		
@@ -81,12 +82,63 @@ public class GUAntanamoMessaging {
 		
 		return folders.get(name.toLowerCase());
 	}
-
+	
 	public static JSONFolder getCurrentFolder() {
 		if(currentFolder == null) {
 			return null;
 		}
 		return currentFolder.folder;
+	}
+
+	public static JSONFolder getFolder(NavType direction) {
+		if(folders == null || currentFolder == null) {
+			return null;
+		}
+		
+		JSONFolder[] items = folders.values().toArray(new JSONFolder[] {} );
+		int index = 0;
+		for(; index < items.length; index++) {
+			if(items[index] == currentFolder.folder) {
+				// Perform the nav
+				if(direction == NavType.NEXT_SIBLING) {
+					index++;
+
+				} else if(direction == NavType.PREV_SIBLING) {
+					index--;
+					
+				}
+				
+				break;
+			}
+		}
+
+		// Check it's possible
+		if(index < 0 || index >= items.length) {
+			return currentFolder.folder;
+		}
+		
+		if(GUAntanamo.getViewMode(false) == ViewMode.Unread) {
+			/*
+			 * Only the initial state is guaranteed to match the view mode,
+			 * messages marked as read stay in currentFolder so that
+			 * location / index remain valid
+			 */
+			boolean loop = true;
+			while(loop) {
+				JSONFolder item = items[index];
+				if(item.getUnread() == 0) {
+					index++;
+					
+					if(index < 0 || index >= items.length) {
+						return currentFolder.folder;
+					}
+				} else {
+					loop = false;
+				}
+			}
+		}
+		
+		return items[index];
 	}
 
 	public static int getFolderRefreshMinutes() {
@@ -102,7 +154,7 @@ public class GUAntanamoMessaging {
 		if(refresh) {
 			cache.clear();
 		}
-
+		
 		for(JSONFolder item : cache.getItem()) {
 			items.put(getFolderKey(item.getName()), item);
 			
@@ -117,6 +169,7 @@ public class GUAntanamoMessaging {
 		cache.close();
 		
 		folders = items;
+		
 	}
 
 	public static List<FolderThread> getCurrentThreads() {
@@ -217,27 +270,31 @@ public class GUAntanamoMessaging {
 	 * If the navigation cannot be performed the current position
 	 * remains unchanged
 	 * 
-	 * @param type
+	 * @param direction
 	 * @param normalise
 	 * @return
 	 */
-	public static int getCurrentMessageId(NavType type) {
+	public static int getMessageId(NavType direction) {
 		int location = currentFolder.location;
 		int index = currentFolder.index;
 
 		// Perform the nav
-		if(type == NavType.NextMessage) {
+		if(direction == NavType.NEXT_SIBLING) {
 			index++;
-		} else if(type == NavType.NextThread) {
+
+		} else if(direction == NavType.PREV_SIBLING) {
+			index--;
+
+		} else if(direction == NavType.NEXT_PARENT) {
 			location++;
 			index = 0;
-		} else if(type == NavType.PrevMessage) {
-			index--;
-		} else if(type == NavType.PrevThread) {
+			
+		} else if(direction == NavType.PREV_PARENT) {
 			location--;
 			if(location >= 0) {
 				index = currentFolder.threads.get(location).messages.size() - 1;
 			}
+			
 		}
 		
 		// Check it's possible
@@ -255,13 +312,13 @@ public class GUAntanamoMessaging {
 			while(loop) {
 				List<JSONMessage> messages = currentFolder.threads.get(location).messages;
 				if(messages.get(index).isRead()) {
-					if(type == NavType.NextMessage || type == NavType.NextThread) {
+					if(direction == NavType.NEXT_SIBLING || direction == NavType.NEXT_PARENT) {
 						index++;
 						if(index == messages.size()) {
 							location++;
 							index = 0;
 						}
-					} else if(type == NavType.PrevMessage || type == NavType.PrevThread) {
+					} else if(direction == NavType.PREV_SIBLING || direction == NavType.PREV_PARENT) {
 						index--;
 						if(index < 0) {
 							location--;
@@ -277,10 +334,7 @@ public class GUAntanamoMessaging {
 			}
 		}
 		
-		currentFolder.location = location;
-		currentFolder.index = index;
-		
-		return getCurrentMessageId();
+		return currentFolder.threads.get(location).messages.get(index).getId();
 	}
 
 	public static void setCurrentMessageId(int id) {

@@ -7,7 +7,6 @@ import java.util.List;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
-import org.ua2.guantanamo.NavType;
 import org.ua2.guantanamo.ViewMode;
 import org.ua2.guantanamo.data.CacheItem;
 import org.ua2.json.JSONMessage;
@@ -19,9 +18,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -57,71 +54,15 @@ public class MessageViewActivity extends Activity {
 		}
 	}
 
-	private class MyGestureDetector extends SimpleOnGestureListener {
-		@Override
-		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-			NavType direction = null;
-			
-			if(getDirection(e1.getX(), e2.getX(), thresholdX, velocityX) == 1 && getDirection(e1.getY(), e2.getY(), thresholdY / 2, velocityY) == 0) {
-				// Right
-				direction = NavType.PrevMessage;
-				
-			} else if(getDirection(e1.getX(), e2.getX(), thresholdX, velocityX) == -1 && getDirection(e1.getY(), e2.getY(), thresholdY / 2, velocityY) == 0) {
-				// Left
-				direction = NavType.NextMessage;
-				
-			} else if(getDirection(e1.getX(), e2.getX(), thresholdX, velocityX / 2) == 0 && getDirection(e1.getY(), e2.getY(), thresholdY, velocityY) == 1) {
-				// Down
-				direction = NavType.PrevThread;
-				
-			} else if(getDirection(e1.getX(), e2.getX(), thresholdX, velocityX / 2) == 0 && getDirection(e1.getY(), e2.getY(), thresholdY, velocityY) == -1) {
-				// Up
-				direction = NavType.NextThread;
-				
-			}
-			
-			Log.i(TAG, "Fling " + e1.getX() + " -> " + e2.getX() + " @ " + velocityX + " , " + e1.getY() + " -> " + e2.getY() + " @ " + velocityY + " -> " + direction);
-			
-			if(direction != null) {
-				showMessage(direction, false);
-				
-				return true;
-			}
-		
-			return super.onFling(e1, e2, velocityX, velocityY);
-		}
-	}
-
 	private static final DateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("EE, dd MMM yyyy - HH:mm:ss");
 	private static final int ACTIVITY_POST = 1;
 
 	private int id;
 	private JSONMessage message;
 	
-	// Stuff for swipe support
-	private int thresholdX;
-	private int thresholdY;
-
-	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
-
-	private GestureDetector detector;;
+	private GestureDetector detector;
 
 	private static final String TAG = MessageViewActivity.class.getSimpleName();
-
-	private int getDirection(float p1, float p2, int threshold, float velocity) {
-		if(Math.abs(velocity) > SWIPE_THRESHOLD_VELOCITY) {
-			if(p2 - p1 > threshold) {
-				Log.d(TAG, "getDirection " + p2 + " - " + p1 + " > " + threshold + " exit 1");
-				return 1;
-			} else if(p1 - p2 > threshold) {
-				Log.d(TAG, "getDirection " + p1 + " - " + p2 + " > " + threshold + " exit -1");
-				return -1;
-			}
-		}
-		
-		Log.d(TAG, "getDirection " + p1 + " -vs- " + p2 + " @ " + velocity + " exit 0");
-		return 0;
-	}
 
 	private void setMessageView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, false);
@@ -141,8 +82,8 @@ public class MessageViewActivity extends Activity {
 		setTitle(sb.toString());
 	}
 
-	private void showMessage(final NavType type, final boolean refresh) {
-		id = GUAntanamoMessaging.getCurrentMessageId(type);
+	private void showMessage(final NavType direction, final boolean refresh) {
+		id = GUAntanamoMessaging.getMessageId(direction);
 		if(id > 0) {
 			BackgroundCaller.run(this, "Getting message...", new BackgroundWorker() {
 				@Override
@@ -251,10 +192,12 @@ public class MessageViewActivity extends Activity {
 		setContentView(R.layout.view);
 
 		DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		thresholdX = metrics.widthPixels / 2;
-		thresholdY = metrics.heightPixels / 2;
-		
-		detector = new GestureDetector(new MyGestureDetector());
+		detector = new GestureDetector(new NavGestureDetector(metrics.widthPixels / 2, metrics.heightPixels / 2) {
+			@Override
+			protected void performAction(NavType direction) {
+				showMessage(direction, false);
+			}
+		});
 
 		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
 		bodyText.setMovementMethod(new ScrollingMovementMethod());
