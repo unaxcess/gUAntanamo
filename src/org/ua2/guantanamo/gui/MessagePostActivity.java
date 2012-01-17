@@ -6,7 +6,6 @@ import java.util.List;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
-import org.ua2.guantanamo.data.CacheFolders;
 import org.ua2.json.JSONFolder;
 
 import android.app.Activity;

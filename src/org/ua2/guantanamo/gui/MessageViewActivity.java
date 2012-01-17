@@ -13,11 +13,16 @@ import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -274,6 +279,9 @@ public class MessageViewActivity extends Activity {
 			
 			startActivityForResult(intent, ACTIVITY_POST);
 
+		} else if(item.getItemId() == R.id.viewHold) {
+			holdMessage();
+
 		} else {
 			return super.onContextItemSelected(item);
 		}
@@ -288,5 +296,43 @@ public class MessageViewActivity extends Activity {
 		} else {
 			return false;
 		}
+	}
+
+	private void holdMessage() {
+		final ProgressDialog progress = ProgressDialog.show(this, "", "Holding message...", true);
+
+		new AsyncTask<String, Void, String>() {
+			@Override
+			protected String doInBackground(String... params) {
+				try {
+					int id = GUAntanamoMessaging.getCurrentMessageId();
+
+					Log.i(TAG, "Saving message " + id);
+					GUAntanamo.getClient().saveMessage(id);
+
+					return null;
+				} catch(JSONException e) {
+					return e.getMessage();
+				}
+			}
+
+			protected void onPostExecute(String error) {
+				progress.dismiss();
+
+				if(error == null) {
+					setResult(RESULT_OK);
+					finish();
+				} else {
+					AlertDialog.Builder builder = new AlertDialog.Builder(MessageViewActivity.this);
+					builder.setMessage("Unable to save message, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							dialog.cancel();
+						}
+					});
+					AlertDialog dialog = builder.create();
+					dialog.show();
+				}
+			}
+		}.execute();
 	}
 }

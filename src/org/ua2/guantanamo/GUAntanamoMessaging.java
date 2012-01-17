@@ -91,6 +91,7 @@ public class GUAntanamoMessaging {
 	}
 
 	public static JSONFolder getFolder(NavType direction) {
+		Log.d(TAG, "Data state folders=" + (folders != null) + " currentFolder=" + (currentFolder != null));
 		if(folders == null || currentFolder == null) {
 			return null;
 		}

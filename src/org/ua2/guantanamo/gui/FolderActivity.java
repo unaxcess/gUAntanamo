@@ -65,7 +65,10 @@ public class FolderActivity extends ListActivity {
 
 	private void showFolder(NavType direction, final boolean refresh) {
 		
-		folderName = GUAntanamoMessaging.getFolder(direction).getName();
+		JSONFolder folder = GUAntanamoMessaging.getFolder(direction);
+		if(folder != null) {
+			folderName = folder.getName();
+		}
 		
 		BackgroundCaller.run(this, "Getting messages...", new BackgroundWorker() {
 			@Override
