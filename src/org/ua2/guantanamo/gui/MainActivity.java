@@ -15,6 +15,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -29,7 +30,7 @@ public class MainActivity extends ListActivity {
 	private static final int ACTIVITY_FOLDER = 3;
 	private static final int ACTIVITY_POST = 4;
 
-	private static final String TAG = MainActivity.class.getSimpleName();
+	private static final String TAG = MainActivity.class.getName();
 
 	private class JSONDisplay {
 		private JSONFolder object;
@@ -78,6 +79,18 @@ public class MainActivity extends ListActivity {
 				}
 
 				setListAdapter(new ArrayAdapter<JSONDisplay>(MainActivity.this, android.R.layout.simple_list_item_1, list));
+
+				JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
+				if(folder != null) {
+					int top = 0;
+					for(int index = 0; index < list.size(); index++) {
+						Log.d(TAG, "Restoring list position " + index + " / " + top);
+						getListView().setSelectionFromTop(index, top); 
+						if(folder.getName().compareTo(list.get(index).object.getName()) >= 0) {
+							break;
+						}
+					}
+				}
 			}
 
 			@Override
