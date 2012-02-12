@@ -4,6 +4,7 @@
     
     <string name="all">All</string>
     <string name="cancel">Cancel</string>
+    <string name="catchup">Catchup</string>
     <string name="folder">Folder</string>
     <string name="hold">Hold</string>
     <string name="no_folders">No folders</string>
