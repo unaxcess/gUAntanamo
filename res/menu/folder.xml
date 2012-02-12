@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/unread" android:id="@+id/folderUnread"></item>
-    <item android:title="@string/all" android:id="@+id/folderAll"></item>
+    <item android:title="@string/unread" android:id="@+id/folderUnread" android:icon="@drawable/ic_menu_sun"></item>
+    <item android:title="@string/all" android:id="@+id/folderAll" android:icon="@drawable/ic_menu_smalltiles"></item>
     <item android:title="@string/refresh" android:id="@+id/folderRefresh"></item>
-    <item android:title="@string/post" android:id="@+id/folderPost"></item>
-    <item android:id="@+id/folderPage" android:title="@string/page"></item>
+    <item android:title="@string/post" android:id="@+id/folderPost" android:icon="@drawable/ic_menu_wizard"></item>
+    <item android:id="@+id/folderPage" android:title="@string/page" android:icon="@drawable/ic_menu_dialog"></item>
 </menu>

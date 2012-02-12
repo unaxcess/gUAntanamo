@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/refresh" android:id="@+id/mainRefresh"></item><item android:title="@string/unread" android:id="@+id/mainUnread"></item>
-    <item android:title="@string/subscribed" android:id="@+id/mainSubscribed"></item>
+    <item android:title="@string/refresh" android:id="@+id/mainRefresh"></item><item android:title="@string/unread" android:id="@+id/mainUnread" android:icon="@drawable/ic_menu_sun"></item>
+    <item android:title="@string/subscribed" android:id="@+id/mainSubscribed" android:icon="@drawable/ic_menu_largetiles"></item>
     
-    <item android:title="@string/post" android:id="@+id/mainPost"></item><item android:id="@+id/mainPage" android:title="@string/page"></item><item android:title="@string/all" android:id="@+id/mainAll"></item><item android:title="@string/settings" android:id="@+id/mainSettings"></item>
+    <item android:title="@string/post" android:id="@+id/mainPost" android:icon="@drawable/ic_menu_wizard"></item><item android:id="@+id/mainPage" android:title="@string/page" android:icon="@drawable/ic_menu_dialog"></item><item android:title="@string/all" android:id="@+id/mainAll" android:icon="@drawable/ic_menu_smalltiles"></item><item android:title="@string/settings" android:id="@+id/mainSettings" android:icon="@drawable/ic_menu_settings"></item>
     
     
     
