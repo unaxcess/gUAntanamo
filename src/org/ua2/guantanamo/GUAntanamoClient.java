@@ -33,7 +33,7 @@ public class GUAntanamoClient extends JSONClient {
 
 	private static String userAgent = "gUAntanmo";
 
-	private static final String TAG = GUAntanamoClient.class.getSimpleName();
+	private static final String TAG = GUAntanamoClient.class.getName();
 
 	public GUAntanamoClient(String url, final String username, final String password) {
 		super();
