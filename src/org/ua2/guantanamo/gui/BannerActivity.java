@@ -44,7 +44,7 @@ public class BannerActivity extends Activity {
 	
 	private JSONObject system;
 
-	private static final String TAG = BannerActivity.class.getSimpleName();
+	private static final String TAG = BannerActivity.class.getName();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
