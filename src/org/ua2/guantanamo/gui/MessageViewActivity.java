@@ -67,7 +67,7 @@ public class MessageViewActivity extends Activity {
 	
 	private GestureDetector detector;
 
-	private static final String TAG = MessageViewActivity.class.getSimpleName();
+	private static final String TAG = MessageViewActivity.class.getName();
 
 	private void setMessageView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, false);
@@ -88,7 +88,11 @@ public class MessageViewActivity extends Activity {
 	}
 
 	private void showMessage(final NavType direction, final boolean refresh) {
-		id = GUAntanamoMessaging.getMessageId(direction);
+		
+		if(direction != null || id == 0) {
+			id = GUAntanamoMessaging.getMessageId(direction);
+		}
+		
 		if(id > 0) {
 			BackgroundCaller.run(this, "Getting message...", new BackgroundWorker() {
 				@Override
@@ -282,6 +286,9 @@ public class MessageViewActivity extends Activity {
 		} else if(item.getItemId() == R.id.viewHold) {
 			holdMessage();
 
+		} else if(item.getItemId() == R.id.viewCatchup) {
+			catchupThread();
+
 		} else {
 			return super.onContextItemSelected(item);
 		}
@@ -325,6 +332,44 @@ public class MessageViewActivity extends Activity {
 				} else {
 					AlertDialog.Builder builder = new AlertDialog.Builder(MessageViewActivity.this);
 					builder.setMessage("Unable to save message, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							dialog.cancel();
+						}
+					});
+					AlertDialog dialog = builder.create();
+					dialog.show();
+				}
+			}
+		}.execute();
+	}
+
+	private void catchupThread() {
+		final ProgressDialog progress = ProgressDialog.show(this, "", "Catching up thread...", true);
+
+		new AsyncTask<String, Void, String>() {
+			@Override
+			protected String doInBackground(String... params) {
+				try {
+					int id = GUAntanamoMessaging.getCurrentThreadId();
+
+					Log.i(TAG, "Marking thread " + id);
+					GUAntanamo.getClient().markThread(id, true);
+
+					return null;
+				} catch(JSONException e) {
+					return e.getMessage();
+				}
+			}
+
+			protected void onPostExecute(String error) {
+				progress.dismiss();
+
+				if(error == null) {
+					setResult(RESULT_OK);
+					finish();
+				} else {
+					AlertDialog.Builder builder = new AlertDialog.Builder(MessageViewActivity.this);
+					builder.setMessage("Unable to catch up thread, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int id) {
 							dialog.cancel();
 						}
