@@ -37,6 +37,7 @@ public class GUAntanamoMessaging {
 	}
 	
 	private static class InternalFolderThread {
+		int threadId;
 		Date mostRecentDate;
 		
 		List<JSONMessage> messages = new ArrayList<JSONMessage>();
@@ -46,7 +47,7 @@ public class GUAntanamoMessaging {
 	private static CurrentFolder currentFolder = null;
 	private static Set<Integer> markedMessageIds = new HashSet<Integer>();
 
-	private static final String TAG = GUAntanamoMessaging.class.getSimpleName();
+	private static final String TAG = GUAntanamoMessaging.class.getName();
 	
 	private static String getFolderKey(String name) {
 		return name.toLowerCase();
@@ -127,7 +128,7 @@ public class GUAntanamoMessaging {
 			boolean loop = true;
 			while(loop) {
 				JSONFolder item = items[index];
-				if(item.getUnread() == 0) {
+				if(!item.getSubscribed() || item.getUnread() == 0) {
 					index++;
 					
 					if(index < 0 || index >= items.length) {
@@ -235,6 +236,7 @@ public class GUAntanamoMessaging {
 					Log.d(TAG, "Creating thread " + message.getThread());
 					
 					thread = new InternalFolderThread();
+					thread.threadId = message.getThread();
 					thread.mostRecentDate = message.getDate();
 					
 					threads.put(message.getThread(), thread);
@@ -264,6 +266,10 @@ public class GUAntanamoMessaging {
 	
 	public static int getCurrentMessageId() {
 		return currentFolder.threads.get(currentFolder.location).messages.get(currentFolder.index).getId();
+	}
+
+	public static int getCurrentThreadId() {
+		return currentFolder.threads.get(currentFolder.location).threadId;
 	}
 
 	/**
