@@ -40,7 +40,7 @@ public class MessagePostActivity extends Activity {
 	private EditText subjectText;
 	private EditText bodyText;
 
-	private static final String TAG = MessagePostActivity.class.getSimpleName();
+	private static final String TAG = MessagePostActivity.class.getName();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
