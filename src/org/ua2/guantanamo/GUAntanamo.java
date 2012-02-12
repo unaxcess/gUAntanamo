@@ -20,7 +20,7 @@ public class GUAntanamo {
 
 	private static ViewMode viewMode = ViewMode.Unread;
 	
-	private static final String TAG = GUAntanamo.class.getSimpleName();
+	private static final String TAG = GUAntanamo.class.getName();
 
 	public static GUAntanamoClient getClient() {
 		if(client == null) {
