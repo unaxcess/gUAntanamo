@@ -24,6 +24,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -42,8 +43,9 @@ public class FolderActivity extends ListActivity {
 	private Calendar threeDays;
 	
 	private GestureDetector detector;
+	private OnTouchListener listener;
 
-	private static final String TAG = FolderActivity.class.getSimpleName();
+	private static final String TAG = FolderActivity.class.getName();
 
 	private class JSONDisplay {
 		private JSONMessage object;
@@ -65,9 +67,11 @@ public class FolderActivity extends ListActivity {
 
 	private void showFolder(NavType direction, final boolean refresh) {
 		
-		JSONFolder folder = GUAntanamoMessaging.getFolder(direction);
-		if(folder != null) {
-			folderName = folder.getName();
+		if(direction != null || folderName == null) {
+			JSONFolder folder = GUAntanamoMessaging.getFolder(direction);
+			if(folder != null) {
+				folderName = folder.getName();
+			}
 		}
 		
 		BackgroundCaller.run(this, "Getting messages...", new BackgroundWorker() {
@@ -138,6 +142,18 @@ public class FolderActivity extends ListActivity {
 			}
 		});
 
+		listener = new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if(detector.onTouchEvent(event)) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		};
+		getListView().setOnTouchListener(listener);
+		
 		FolderActivity retainedData = (FolderActivity)getLastNonConfigurationInstance();
 
 		if(retainedData == null) {
@@ -232,10 +248,6 @@ public class FolderActivity extends ListActivity {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if(detector.onTouchEvent(event)) {
-			return true;
-		} else {
-			return false;
-		}
+		return listener.onTouch(getListView(), event);
 	}
 }
