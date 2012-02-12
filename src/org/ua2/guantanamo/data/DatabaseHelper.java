@@ -20,7 +20,7 @@ class DatabaseHelper extends SQLiteOpenHelper {
 	private SQLiteStatement itemDelete;
 	private static final String ITEM_DELETE = "delete from " + ITEM_TABLE + " where type=? and id=?";
 
-	private static final String TAG = DatabaseHelper.class.getSimpleName();
+	private static final String TAG = DatabaseHelper.class.getName();
 
 	public DatabaseHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
