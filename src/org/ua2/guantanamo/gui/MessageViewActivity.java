@@ -8,14 +8,11 @@ import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
-import org.ua2.guantanamo.data.CacheItem;
 import org.ua2.json.JSONMessage;
-import org.ua2.json.JSONWrapper;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -33,32 +30,6 @@ import android.widget.TextView;
 
 public class MessageViewActivity extends Activity {
 
-	private class CacheMessage extends CacheItem<JSONMessage> {
-
-		public CacheMessage(Context context) throws JSONException {
-			super(context, "message", Integer.toString(id));
-		}
-
-		@Override
-		protected long getStaleMinutes() {
-			return 0;
-		}
-
-		@Override
-		protected JSONMessage refreshItem() throws JSONException {
-			return new JSONMessage(GUAntanamo.getClient().getMessage(id));
-		}
-
-		protected boolean shouldRefresh() {
-			return false;
-		}
-
-		@Override
-		protected JSONMessage toItem(String data) throws JSONException {
-			return new JSONMessage(JSONWrapper.parse(data).getObject());
-		}
-	}
-
 	private static final DateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("EE, dd MMM yyyy - HH:mm:ss");
 	private static final int ACTIVITY_POST = 1;
 
@@ -66,6 +37,7 @@ public class MessageViewActivity extends Activity {
 	private JSONMessage message;
 	
 	private GestureDetector detector;
+	private BackgroundCaller caller;
 
 	private static final String TAG = MessageViewActivity.class.getName();
 
@@ -88,28 +60,22 @@ public class MessageViewActivity extends Activity {
 	}
 
 	private void showMessage(final NavType direction, final boolean refresh) {
-		
-		if(direction != null || id == 0) {
-			id = GUAntanamoMessaging.getMessageId(direction);
+		if(caller != null && !refresh) {
+			caller.attach(this);
+			return;
 		}
 		
 		if(id > 0) {
-			BackgroundCaller.run(this, "Getting message...", new BackgroundWorker() {
+			BackgroundCaller.run(new BackgroundCaller(this, "Getting message") {
 				@Override
 				public void during() throws Exception {				
-					CacheMessage cache = new CacheMessage(MessageViewActivity.this);
-					
-					if(refresh) {
-						cache.clear();
+					if(direction != null || id == 0) {
+						id = GUAntanamoMessaging.getMessageId(direction);
 					}
-					message = cache.getItem();
 					
-					cache.close();
-					
-					GUAntanamoMessaging.setCurrentMessageId(message.getId());
+					message = GUAntanamoMessaging.setCurrentMessage(getContext(), id, refresh);
 				}
-
-				@Override
+				
 				public void after() {
 					setTitle(message);
 
@@ -174,18 +140,12 @@ public class MessageViewActivity extends Activity {
 
 					if(!message.isRead()) {
 						try {
-							GUAntanamoMessaging.markCurrentMessageRead();
+							GUAntanamoMessaging.markCurrentMessageRead(getContext());
 						} catch(JSONException e) {
-							GUAntanamo.handleException(MessageViewActivity.this, "Cannot mark message", e);
+							GUAntanamo.handleException(getContext(), "Cannot mark message", e);
 						}
 					}
 				}
-
-				@Override
-				public String getError() {
-					return "Cannot get message";
-				}
-				
 			});
 		} else {
 			setResult(RESULT_OK);
@@ -212,7 +172,6 @@ public class MessageViewActivity extends Activity {
 		bodyText.setMovementMethod(new ScrollingMovementMethod());
 
 		MessageViewActivity retainedData = (MessageViewActivity)getLastNonConfigurationInstance();
-
 		if(retainedData == null) {
 			// No retained data from the running config change
 
@@ -221,10 +180,9 @@ public class MessageViewActivity extends Activity {
 			// Retrieve stored data from before the running config changed
 
 			id = retainedData.id;
+			caller = retainedData.caller;
 		}
 		
-		GUAntanamoMessaging.setCurrentMessageId(id);
-
 		showMessage(null, false);
 	}
 
@@ -263,7 +221,7 @@ public class MessageViewActivity extends Activity {
 			showMessage(null, true);
 
 		} else if(item.getItemId() == R.id.viewPost || item.getItemId() == R.id.viewReply) {
-			Intent intent = new Intent(MessageViewActivity.this, MessagePostActivity.class);
+			Intent intent = new Intent(this, MessagePostActivity.class);
 
 			intent.putExtra("folder", message.getFolder());
 

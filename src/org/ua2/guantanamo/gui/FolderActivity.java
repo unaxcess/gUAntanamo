@@ -44,6 +44,8 @@ public class FolderActivity extends ListActivity {
 	
 	private GestureDetector detector;
 	private OnTouchListener listener;
+	
+	private BackgroundCaller caller;
 
 	private static final String TAG = FolderActivity.class.getName();
 
@@ -64,25 +66,28 @@ public class FolderActivity extends ListActivity {
 			return subject + " [" + datetime + ", " + count + "]";
 		}
 	}
-
-	private void showFolder(NavType direction, final boolean refresh) {
-		
-		if(direction != null || folderName == null) {
-			JSONFolder folder = GUAntanamoMessaging.getFolder(direction);
-			if(folder != null) {
-				folderName = folder.getName();
-			}
+	private void showFolder(final NavType direction, final boolean refresh) {
+		if(caller != null && !refresh) {
+			caller.attach(this);
+			return;
 		}
 		
-		BackgroundCaller.run(this, "Getting messages...", new BackgroundWorker() {
+		caller = BackgroundCaller.run(new BackgroundCaller(this, "Getting messages") {
+			JSONFolder folder; 
+			
 			@Override
 			public void during() throws Exception {
-				GUAntanamoMessaging.setCurrentFolder(FolderActivity.this, folderName, refresh);
+				if(direction != null || folderName == null) {
+					JSONFolder folder = GUAntanamoMessaging.getFolder(getContext(), direction);
+					if(folder != null) {
+						folderName = folder.getName();
+					}
+				}
+				
+				folder = GUAntanamoMessaging.setCurrentFolder(getContext(), folderName, refresh);
 			}
-
-			@Override
+			
 			public void after() {
-				JSONFolder folder = GUAntanamoMessaging.getFolder(folderName);
 				String title = folder.getName();
 				int unread = 0;
 				int count = folder.getCount();
@@ -111,14 +116,8 @@ public class FolderActivity extends ListActivity {
 					list.add(new JSONDisplay(message, message.getSubject(), dateStr, thread.size));
 				}
 
-				setListAdapter(new ArrayAdapter<JSONDisplay>(FolderActivity.this, android.R.layout.simple_list_item_1, list));
+				setListAdapter(new ArrayAdapter<JSONDisplay>(getContext(), android.R.layout.simple_list_item_1, list));
 			}
-
-			@Override
-			public String getError() {
-				return "Cannot get messages";
-			}
-			
 		});
 	}
 
@@ -164,6 +163,7 @@ public class FolderActivity extends ListActivity {
 			// Retrieve stored data from before the running config changed
 
 			folderName = retainedData.folderName;
+			caller = retainedData.caller;
 		}
 
 		midnight = Calendar.getInstance();
@@ -183,6 +183,10 @@ public class FolderActivity extends ListActivity {
 		// changes, Android will kill and restart the Activity. This
 		// stores its data so we can reuse it when the Activity
 		// restarts
+
+		if(caller != null) {
+			caller.detach();
+		}
 
 		return this;
 	}

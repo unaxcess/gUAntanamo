@@ -13,6 +13,7 @@ import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.ua2.guantanamo.data.CacheFolders;
+import org.ua2.guantanamo.data.CacheMessage;
 import org.ua2.guantanamo.data.CacheMessages;
 import org.ua2.guantanamo.gui.NavType;
 import org.ua2.json.JSONFolder;
@@ -43,7 +44,7 @@ public class GUAntanamoMessaging {
 		List<JSONMessage> messages = new ArrayList<JSONMessage>();
 	}
 
-	private static Map<String, JSONFolder> folders;
+	private static Map<String, JSONFolder> folders = null;
 	private static CurrentFolder currentFolder = null;
 	private static Set<Integer> markedMessageIds = new HashSet<Integer>();
 
@@ -68,20 +69,12 @@ public class GUAntanamoMessaging {
 		return true;
 	}
 	
-	public static Collection<JSONFolder> getFolders() {
-		if(folders == null) {
-			return null;
-		}
-		
-		return folders.values();
+	public static Collection<JSONFolder> getFolderList(Context context, boolean refresh) {
+		return getFolders(context, refresh).values();
 	}
 
-	public static JSONFolder getFolder(String name) {
-		if(folders == null) {
-			return null;
-		}
-		
-		return folders.get(name.toLowerCase());
+	public static JSONFolder getFolder(Context context, String name) {
+		return getFolders(context, false).get(name.toLowerCase());
 	}
 	
 	public static JSONFolder getCurrentFolder() {
@@ -91,13 +84,13 @@ public class GUAntanamoMessaging {
 		return currentFolder.folder;
 	}
 
-	public static JSONFolder getFolder(NavType direction) {
-		Log.d(TAG, "Data state folders=" + (folders != null) + " currentFolder=" + (currentFolder != null));
-		if(folders == null || currentFolder == null) {
+	public static JSONFolder getFolder(Context context, NavType direction) {
+		Log.d(TAG, "Data state currentFolder=" + (currentFolder != null));
+		if(currentFolder == null) {
 			return null;
 		}
 		
-		JSONFolder[] items = folders.values().toArray(new JSONFolder[] {} );
+		JSONFolder[] items = getFolders(context, false).values().toArray(new JSONFolder[] {} );
 		int index = 0;
 		for(; index < items.length; index++) {
 			if(items[index] == currentFolder.folder) {
@@ -147,31 +140,32 @@ public class GUAntanamoMessaging {
 		return 10;
 	}
 
-	public static void setFolders(Context context, boolean refresh) throws JSONException {
-		Log.i(TAG, "Setting folders refresh=" + refresh);
-		
+	private static Map<String, JSONFolder> getFolders(Context context, boolean refresh) {
+		if(folders != null && !refresh) {
+			return folders;
+		}
+
+		Log.i(TAG, "Getting folders refresh=" + refresh);
+
 		Map<String, JSONFolder> items = new TreeMap<String, JSONFolder>();
 
-		CacheFolders cache = new CacheFolders(context);
-		if(refresh) {
-			cache.clear();
-		}
+		Collection<JSONFolder> list = new CacheFolders(context).getAndClose(refresh);
 		
-		for(JSONFolder item : cache.getItem()) {
+		for(JSONFolder item : list) {
 			items.put(getFolderKey(item.getName()), item);
-			
-			if(!refresh) {
-				JSONFolder folder = getFolder(item.getName());
+		}
+		folders = items;
+
+		if(!refresh) {
+			for(JSONFolder item : folders.values()) {
+				JSONFolder folder = getFolder(context, item.getName());
 				if(folder != null) {
 					item.setUnread(folder.getUnread());
 				}
 			}
 		}
 		
-		cache.close();
-		
-		folders = items;
-		
+		return folders;
 	}
 
 	public static List<FolderThread> getCurrentThreads() {
@@ -201,23 +195,23 @@ public class GUAntanamoMessaging {
 	 * @param messages
 	 * @throws JSONException 
 	 */
-	public static void setCurrentFolder(Context context, String name, boolean refresh) throws JSONException {
+	public static JSONFolder setCurrentFolder(Context context, String name, boolean refresh) throws JSONException {
 		int unread = 0;
 		
 		Log.i(TAG, "Setting current folder name=" + name + " refresh=" + refresh);
 		
 		currentFolder = new CurrentFolder();
-		currentFolder.folder = getFolder(name);
+		currentFolder.folder = getFolder(context, name);
 		
 		CacheMessages cache = new CacheMessages(context, name);
 		if(refresh) {
 			cache.clear();
 		}
+		List<JSONMessage> messages = cache.getItem();
 		
 		// First group them into threads
 		Map<Integer, InternalFolderThread> threads = new TreeMap<Integer, InternalFolderThread>();
 		
-		List<JSONMessage> messages = cache.getItem();
 		refresh = !cache.isItemFromCache();
 		for(JSONMessage message : messages) {
 			if(markedMessageIds.contains(message.getId())) {
@@ -261,7 +255,9 @@ public class GUAntanamoMessaging {
 			
 		});
 		
-		getCurrentFolder().setUnread(unread);
+		currentFolder.folder.setUnread(unread);
+		
+		return currentFolder.folder;
 	}
 	
 	public static int getCurrentMessageId() {
@@ -344,20 +340,24 @@ public class GUAntanamoMessaging {
 		return currentFolder.threads.get(location).messages.get(index).getId();
 	}
 
-	public static void setCurrentMessageId(int id) {
+	public static JSONMessage setCurrentMessage(Context context, int id, boolean refresh) throws JSONException {
 		Log.i(TAG, "Setting current message to " + id);
 		
 		int location = 0;
 		int index = 0;
+
+		JSONMessage message = new CacheMessage(context, id).getAndClose(refresh);
+
+		setCurrentFolder(context, message.getFolder(), refresh);
 		
 		InternalFolderThread thread = currentFolder.threads.get(location);
 		boolean loop = true;
 		do {
-			JSONMessage message = thread.messages.get(index);
-			Log.d(TAG, "Checking current folder location=" + location + " index=" + index + " message=" + message.getId() + ": " + message.getSubject());
+			JSONMessage item = thread.messages.get(index);
+			Log.d(TAG, "Checking current folder location=" + location + " index=" + index + " message=" + item.getId() + ": " + item.getSubject());
 			
-			if(message.getId() == id) {
-				Log.i(TAG, "Found message " + id + " in current folder");
+			if(item.getId() == message.getId()) {
+				Log.i(TAG, "Found message " + message.getId() + " in current folder");
 				
 				loop = false;
 				currentFolder.location = location;
@@ -371,21 +371,23 @@ public class GUAntanamoMessaging {
 						thread = currentFolder.threads.get(location);
 					} else {
 						loop = false;
-						Log.i(TAG, "Cannot find message " + id + " in current folder");
+						Log.i(TAG, "Cannot find message " + message.getId() + " in current folder");
 					}
 				}
 			}
 		} while(loop);
+		
+		return message;
 	}
 
-	public static void markCurrentMessageRead() throws JSONException {
+	public static void markCurrentMessageRead(Context context) throws JSONException {
 		JSONMessage message = currentFolder.threads.get(currentFolder.location).messages.get(currentFolder.index);
 		if(!message.isRead()) {
 			
 			
 			message.setRead(true);
 			markedMessageIds.add(message.getId());
-			JSONFolder folder = getFolder(message.getFolder());
+			JSONFolder folder = getFolder(context, message.getFolder());
 			if(folder != null) {
 				folder.setUnread(folder.getUnread() - 1);
 			}

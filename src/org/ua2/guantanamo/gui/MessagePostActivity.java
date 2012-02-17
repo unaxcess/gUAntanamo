@@ -40,6 +40,8 @@ public class MessagePostActivity extends Activity {
 	private EditText subjectText;
 	private EditText bodyText;
 
+	private BackgroundCaller caller;
+
 	private static final String TAG = MessagePostActivity.class.getName();
 
 	@Override
@@ -79,7 +81,7 @@ public class MessagePostActivity extends Activity {
 		if(quickMode) {
 			names.add(folder);
 		} else {
-			for(JSONFolder folder : GUAntanamoMessaging.getFolders()) {
+			for(JSONFolder folder : GUAntanamoMessaging.getFolderList(this, false)) {
 				names.add(folder.getName());
 			}
 		}
@@ -162,7 +164,7 @@ public class MessagePostActivity extends Activity {
 	}
 
 	private void postMessage() {
-		final ProgressDialog progress = ProgressDialog.show(this, "", "Posting message...", true);
+		final ProgressDialog progress = ProgressDialog.show(this, "", "Posting message", true);
 
 		new AsyncTask<String, Void, String>() {
 			@Override

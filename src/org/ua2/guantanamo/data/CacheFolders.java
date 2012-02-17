@@ -22,7 +22,7 @@ import android.content.Context;
  */
 public class CacheFolders extends CacheItem<Collection<JSONFolder>> {
 
-	public CacheFolders(Context context) throws JSONException {
+	public CacheFolders(Context context) {
 		super(context, "folders", null);
 	}
 

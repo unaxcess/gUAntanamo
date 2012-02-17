@@ -35,8 +35,8 @@ public abstract class CacheItem<T> {
 
 	private static final DateFormat LASTUPDATE_FORMATTER = new SimpleDateFormat("dd/MM,HH:mm:ss");
 
-	public CacheItem(Context context, String type, String itemId) throws JSONException {
-		Log.d(TAG, "Creating " + type + "=" + id);
+	public CacheItem(Context context, String type, String itemId) {
+		Log.d(TAG, "Creating " + type + "=" + itemId);
 
 		this.helper = new DatabaseHelper(context);
 		this.type = type;
@@ -51,7 +51,11 @@ public abstract class CacheItem<T> {
 			lastUpdate = row.lastUpdate;
 			data = row.data;
 
-			item = toItem(data);
+			try {
+				item = toItem(data);
+			} catch(JSONException e) {
+				throw new CacheException("Cannot convert data to item", e);
+			}
 		}
 	}
 
@@ -71,9 +75,8 @@ public abstract class CacheItem<T> {
 	 * This will trigger a refresh if there's no data cache or it's deemed out of date
 	 * 
 	 * @return
-	 * @throws JSONException
 	 */
-	public T getItem() throws JSONException {
+	public T getItem() {
 		isItemFromCache = true;
 		
 		Log.d(TAG, "Checking " + type + "=" + id + ","
@@ -88,7 +91,11 @@ public abstract class CacheItem<T> {
 			Log.d(TAG, "Refreshing " + type + "=" + id);
 			// ...get the item
 			lastUpdate = new Date(System.currentTimeMillis());
-			item = refreshItem();
+			try {
+				item = refreshItem();
+			} catch(JSONException e) {
+				throw new CacheException("Cannot refresh " + type + "=" + id, e);
+			}
 
 			// Set the data up
 			data = toData(item);
@@ -101,9 +108,25 @@ public abstract class CacheItem<T> {
 		if(item == null) {
 			// Convert the existing raw data into an object
 			Log.d(TAG, "Converting " + data);
-			item = toItem(data);
+			try {
+				item = toItem(data);
+			} catch(JSONException e) {
+				throw new CacheException("Cannot convert " + type + "=" + id + " data to item", e);
+			}
 		}
 
+		return item;
+	}
+	
+	public T getAndClose(boolean refresh) {
+		if(refresh) {
+			clear();
+		}
+		
+		getItem();
+		
+		close();
+		
 		return item;
 	}
 
