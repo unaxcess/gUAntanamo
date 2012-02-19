@@ -13,6 +13,7 @@ import org.ua2.json.JSONMessage;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -33,18 +34,26 @@ public class MessageViewActivity extends Activity {
 	private static final DateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("EE, dd MMM yyyy - HH:mm:ss");
 	private static final int ACTIVITY_POST = 1;
 
-	private int id;
-	private JSONMessage message;
-	
 	private GestureDetector detector;
 	private BackgroundCaller caller;
+
+	private static class State {
+		int id;
+		JSONMessage message;
+		NavType direction;
+		boolean refresh;
+		
+		BackgroundCaller caller;
+	}
+	
+	private State state;
 
 	private static final String TAG = MessageViewActivity.class.getName();
 
 	private void setMessageView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, false);
 		if(GUAntanamo.getViewMode(false) != viewMode) {
-			setTitle(message);
+			setTitle(state.message);
 		}
 	}
 	
@@ -59,16 +68,16 @@ public class MessageViewActivity extends Activity {
 		setTitle(sb.toString());
 	}
 
-	private void showMessage(final NavType direction, final boolean refresh) {
-		if(caller != null && !refresh) {
-			caller.attach(this);
-			return;
+	private void showMessage(NavType direction, boolean refresh, boolean newCaller) {
+		state.direction = direction;
+		state.refresh = refresh;
+		if(newCaller) {
+			state.caller = null;
 		}
 		
-		if(id > 0) {
-			BackgroundCaller.run(new BackgroundCaller(this, "Getting message") {
-				@Override
-				public void during() throws Exception {				
+		state.caller = BackgroundCaller.run(state.caller, this, "Getting message", new BackgroundWorker() {
+			@Override
+			public void during(Context context) throws Exception {
 					if(direction != null || id == 0) {
 						id = GUAntanamoMessaging.getMessageId(direction);
 					}
@@ -77,6 +86,12 @@ public class MessageViewActivity extends Activity {
 				}
 				
 				public void after() {
+					showMessage();
+				}
+		});
+	}
+	
+	private void showMessage() {
 					setTitle(message);
 
 					TextView dateText = (TextView)findViewById(R.id.viewDateText);
