@@ -11,6 +11,7 @@ import org.ua2.guantanamo.ViewMode;
 import org.ua2.json.JSONFolder;
 
 import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -31,10 +32,6 @@ public class MainActivity extends ListActivity {
 	private static final int ACTIVITY_FOLDER = 3;
 	private static final int ACTIVITY_POST = 4;
 
-	private BackgroundCaller caller;
-	
-	private static final String TAG = MainActivity.class.getName();
-
 	private class JSONDisplay {
 		private JSONFolder object;
 		private String string;
@@ -49,59 +46,77 @@ public class MainActivity extends ListActivity {
 		}
 	}
 
-	private void showFolders(final boolean refresh) {
-		if(caller != null && !refresh) {
-			caller.attach(this);
-			return;
+	private static class State {
+		Collection<JSONFolder> folders;
+		boolean refresh;
+		
+		BackgroundCaller caller;
+	}
+	
+	private State state;
+	
+	private static final String TAG = MainActivity.class.getName();
+	
+	private void showFolders(boolean refresh) {
+		showFolders(refresh, true);
+	}
+	
+	private void showFolders(boolean refresh, boolean newCaller) {
+		state.refresh = refresh;
+		if(newCaller) {
+			state.caller = null;
 		}
 		
-		caller = BackgroundCaller.run(new BackgroundCaller(this, "Getting folders") {
-			Collection<JSONFolder> folders;
-			
-			public void during() throws Exception {
-				folders = GUAntanamoMessaging.getFolderList(getContext(), refresh);
+		state.caller = BackgroundCaller.run(state.caller, this, "Getting folders", new BackgroundWorker() {
+			@Override
+			public void during(Context context) throws Exception {
+				state.folders = GUAntanamoMessaging.getFolderList(context, state.refresh);
 			}
 			
 			public void after() {
-				setTitle("gUAntanamo [" + GUAntanamo.getViewMode(true).name() + "]");
-				
-				List<JSONDisplay> list = new ArrayList<JSONDisplay>();
-
-				for(JSONFolder folder : folders) {
-					String string = folder.getName();
-					boolean subscribed = folder.getSubscribed();
-					int unread = 0;
-					int count = folder.getCount();
-					if(count > 0) {
-						unread = folder.getUnread();
-						if(unread > 0) {
-							string += " (" + unread + " of " + count + ")";
-						} else {
-							string += " (" + count + ")";
-						}
-					}
-					if(GUAntanamo.getViewMode(true) == ViewMode.All || (GUAntanamo.getViewMode(true) == ViewMode.Subscribed && subscribed)
-							|| (GUAntanamo.getViewMode(true) == ViewMode.Unread && subscribed && unread > 0)) {
-						list.add(new JSONDisplay(folder, string));
-					}
-				}
-
-				setListAdapter(new ArrayAdapter<JSONDisplay>(getContext(), android.R.layout.simple_list_item_1, list));
-
-				JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
-				if(folder != null) {
-					for(int index = 0; index < list.size(); index++) {
-						Log.d(TAG, "Restoring list position " + index);
-						if(folder.getName().compareTo(list.get(index).object.getName()) >= 0) {
-							getListView().setSelection(index); 
-							break;
-						}
-					}
-				} else {
-					getListView().setSelection(0);
-				}
+				showFolders();
 			}
 		});
+	}
+	
+	private void showFolders() {
+		setTitle("gUAntanamo [" + GUAntanamo.getViewMode(true).name() + "]");
+		
+		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
+
+		for(JSONFolder folder : state.folders) {
+			String string = folder.getName();
+			boolean subscribed = folder.getSubscribed();
+			int unread = 0;
+			int count = folder.getCount();
+			if(count > 0) {
+				unread = folder.getUnread();
+				if(unread > 0) {
+					string += " (" + unread + " of " + count + ")";
+				} else {
+					string += " (" + count + ")";
+				}
+			}
+			if(GUAntanamo.getViewMode(true) == ViewMode.All || (GUAntanamo.getViewMode(true) == ViewMode.Subscribed && subscribed)
+					|| (GUAntanamo.getViewMode(true) == ViewMode.Unread && subscribed && unread > 0)) {
+				list.add(new JSONDisplay(folder, string));
+			}
+		}
+
+		setListAdapter(new ArrayAdapter<JSONDisplay>(this, android.R.layout.simple_list_item_1, list));
+
+		JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
+		if(folder != null) {
+			for(int index = 0; index < list.size(); index++) {
+				Log.d(TAG, "Restoring list position " + index);
+				if(folder.getName().compareTo(list.get(index).object.getName()) >= 0) {
+					getListView().setSelection(index); 
+					break;
+				}
+			}
+		} else {
+			getListView().setSelection(0);
+		}
 	}
 
 	@Override
@@ -117,10 +132,10 @@ public class MainActivity extends ListActivity {
 
 		setContentView(R.layout.main);
 
-		if(getLastNonConfigurationInstance() != null) {
-			caller = ((MainActivity)getLastNonConfigurationInstance()).caller;
-			showFolders(false);
-		} else {
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+
 			GUAntanamo.setUrl(getPreferences(MODE_PRIVATE).getString("url", "http://ua2.org/uaJSON"));
 			GUAntanamo.setUsername(getPreferences(MODE_PRIVATE).getString("username", ""));
 			GUAntanamo.setPassword(getPreferences(MODE_PRIVATE).getString("password", ""));
@@ -131,20 +146,15 @@ public class MainActivity extends ListActivity {
 				Intent intent = new Intent(this, SettingsActivity.class);
 				startActivityForResult(intent, ACTIVITY_SETTINGS);
 			}
+		} else {
+			showFolders(false);
 		}
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		if(caller != null) {
-			caller.detach();
-		}
-
-		return this;
+		state.caller.pause();
+		
+		return state;
 	}
 
 	@Override

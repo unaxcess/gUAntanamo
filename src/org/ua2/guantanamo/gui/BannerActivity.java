@@ -44,8 +44,14 @@ public class BannerActivity extends Activity {
 	};
 	
 	private TextView bannerText;
+
+	private static class State {
+		JSONObject system;
+		
+		BackgroundCaller caller;
+	}
 	
-	private BackgroundCaller caller;
+	private State state;
 
 	private static final String TAG = BannerActivity.class.getName();
 
@@ -64,59 +70,48 @@ public class BannerActivity extends Activity {
 		});
 
 		bannerText = (TextView)findViewById(R.id.bannerText);
-
-		if(getLastNonConfigurationInstance() != null) {
-			caller = ((BannerActivity)getLastNonConfigurationInstance()).caller;
-		}
-		showBanner();
-	}
-
-	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		if(caller != null) {
-			caller.detach();
-		}
-
-		return this;
-	}
-	
-	private void showBanner() {
-		if(caller != null) {
-			caller.attach(this);
-			return;
+		
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
 		}
 		
-		caller = BackgroundCaller.run(new BackgroundCaller(this, "Getting system info") {
-			JSONObject system;
-			
+		showBanner();
+		state.caller = BackgroundCaller.run(state.caller, this, "Getting system", new BackgroundWorker() {
 			@Override
-			public void during() throws Exception {
-				system = new CacheBanner(getContext()).getAndClose(false);
+			public void during(Context context) throws Exception {
+				state.system = new CacheBanner(context).getAndClose(false);
 			}
 
 			@Override
 			public void after() {
-				String banner = system.optString("banner");
-				if(banner != null) {
-					int hash = banner.hashCode();
-					if(hash != getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0)) {
-						bannerText.setText(system.optString("banner", ""));
-
-						SharedPreferences settings = getPreferences(MODE_PRIVATE);
-						SharedPreferences.Editor editor = settings.edit();
-						editor.putInt(PREFERENCE, hash);
-						editor.commit();
-
-					} else {
-						hide("Banner hash same as last time");
-					}
-				}
+				showBanner();
 			}
 		});
+	}
+
+	public Object onRetainNonConfigurationInstance() {
+		state.caller.pause();
+		
+		return state;
+	}
+	
+	private void showBanner() {
+		String banner = state.system.optString("banner");
+		if(banner != null) {
+			int hash = banner.hashCode();
+			if(hash != getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0)) {
+				bannerText.setText(state.system.optString("banner", ""));
+
+				SharedPreferences settings = getPreferences(MODE_PRIVATE);
+				SharedPreferences.Editor editor = settings.edit();
+				editor.putInt(PREFERENCE, hash);
+				editor.commit();
+
+			} else {
+				hide("Banner hash same as last time");
+			}
+		}
 	}
 
 	private void hide(String msg) {

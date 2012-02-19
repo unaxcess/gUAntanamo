@@ -8,34 +8,43 @@ import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.util.Log;
 
-public abstract class BackgroundCaller extends AsyncTask<Object, Object, Object> {
+public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 
 	private String msg;
 	private boolean done;
 	private Exception error;
 
 	private Context context;
+	private BackgroundWorker worker;
 	private Dialog dialog;
 	
 	private static final String TAG = BackgroundCaller.class.getName(); 
 	
-	public BackgroundCaller(Context context, String msg) {
+	private BackgroundCaller(String msg) {
 		this.msg = msg;
 		this.done = false;
 		this.error = null;
-
-		attach(context);
 	}
 	
-	public static BackgroundCaller run(BackgroundCaller caller) {
-		caller.execute();
+	public static BackgroundCaller run(BackgroundCaller caller, Context context, String msg, BackgroundWorker worker) {
+		if(caller == null) {
+			Log.i(TAG, "Creating " + msg + " caller");
+			caller = new BackgroundCaller(msg);
+			caller.reset(context, worker);
+			caller.execute();
+		} else {
+			Log.i(TAG, "Reusing existing " + caller.msg + " caller");
+			caller.reset(context, worker);
+			caller.check();
+		}
+		
 		return caller;
 	}
 	
 	@Override
 	protected Object doInBackground(Object... args) {
 		try {
-			during();
+			worker.during(context);
 		} catch(Exception e) {
 			error = e;
 		}
@@ -43,44 +52,40 @@ public abstract class BackgroundCaller extends AsyncTask<Object, Object, Object>
 		return null;
 	}
 
-	protected abstract void during() throws Exception;
-	protected abstract void after();
-
 	protected void onPostExecute(Object obj) {
 		done = true;
 		
 		dialog.dismiss();
 
-		check();
-	}
-	
-	protected Context getContext() {
-		return context;
-	}
-
-	public void attach(Context context) {
-		Log.i(TAG, "Attaching context " + context);
-		
-		this.context = context;
-		
-		check();
-	}
-	
-	public void detach() {
-		dialog.dismiss();
-		context = null;
-	}
-
-	public void check() {
 		if(context == null) {
-			Log.i(TAG, "No context, unable to continue");
+			Log.e(TAG, "No context, unable to continue");
 			return;
 		}
+
+		check();
+	}
+	
+	private void reset(Context context, BackgroundWorker worker) {
+		this.context = context;
+		this.worker = worker;
 		
+		if(!done) {
+			dialog = ProgressDialog.show(context, "", msg + "...", true);
+		}
+	}
+	
+	public void pause() {
+		dialog.dismiss();
+		
+		context = null;
+		worker = null;
+	}
+
+	private void check() {
 		if(done) {
 			Log.i(TAG, msg + " done, error=" + (error != null));
 			if(error == null) {
-				after();
+				worker.after();
 			} else {
 				AlertDialog.Builder builder = new AlertDialog.Builder(context);
 				String errMsg = msg + " failed";
@@ -93,8 +98,6 @@ public abstract class BackgroundCaller extends AsyncTask<Object, Object, Object>
 				AlertDialog dialog = builder.create();
 				dialog.show();
 			}
-		} else {
-			dialog = ProgressDialog.show(context, "", msg + "...", true);
 		}
 	}
 }

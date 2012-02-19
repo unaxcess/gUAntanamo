@@ -14,6 +14,7 @@ import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
 
 import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -37,17 +38,11 @@ public class FolderActivity extends ListActivity {
 	private static final DateFormat DAY_FORMATTER = new SimpleDateFormat("E");
 	private static final DateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm");
 
-	private String folderName;
-	
 	private Calendar midnight;
 	private Calendar threeDays;
 	
 	private GestureDetector detector;
 	private OnTouchListener listener;
-	
-	private BackgroundCaller caller;
-
-	private static final String TAG = FolderActivity.class.getName();
 
 	private class JSONDisplay {
 		private JSONMessage object;
@@ -66,59 +61,81 @@ public class FolderActivity extends ListActivity {
 			return subject + " [" + datetime + ", " + count + "]";
 		}
 	}
-	private void showFolder(final NavType direction, final boolean refresh) {
-		if(caller != null && !refresh) {
-			caller.attach(this);
-			return;
+
+	private static class State {
+		String folderName;
+		JSONFolder folder;
+		NavType direction;
+		boolean refresh;
+		
+		BackgroundCaller caller;
+	}
+	
+	private State state;
+	
+	private static final String TAG = FolderActivity.class.getName();
+	
+	private void showFolder(NavType direction, boolean refresh) {
+		showFolder(direction, refresh, true);
+	}
+	
+	private void showFolder(NavType direction, boolean refresh, boolean newCaller) {
+		state.direction = direction;
+		state.refresh = refresh;
+		if(newCaller) {
+			state.caller = null;
 		}
 		
-		caller = BackgroundCaller.run(new BackgroundCaller(this, "Getting messages") {
-			JSONFolder folder; 
-			
+		state.caller = BackgroundCaller.run(state.caller, this, "Getting messages", new BackgroundWorker() {
 			@Override
-			public void during() throws Exception {
-				if(direction != null || folderName == null) {
-					JSONFolder folder = GUAntanamoMessaging.getFolder(getContext(), direction);
+			public void during(Context context) throws Exception {
+				if(state.direction != null || state.folderName == null) {
+					JSONFolder folder = GUAntanamoMessaging.getFolder(context, state.direction);
 					if(folder != null) {
-						folderName = folder.getName();
+						state.folderName = folder.getName();
 					}
 				}
 				
-				folder = GUAntanamoMessaging.setCurrentFolder(getContext(), folderName, refresh);
+				state.folder = GUAntanamoMessaging.setCurrentFolder(context, state.folderName, state.refresh);
 			}
-			
+
+			@Override
 			public void after() {
-				String title = folder.getName();
-				int unread = 0;
-				int count = folder.getCount();
-				if(count > 0) {
-					unread = folder.getUnread();
-					if(unread > 0) {
-						title += " (" + unread + " of " + count + ")";
-					} else {
-						title += " (" + count + ")";
-					}
-				}
-
-				setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
-
-				List<JSONDisplay> list = new ArrayList<JSONDisplay>();
-				for(FolderThread thread : GUAntanamoMessaging.getCurrentThreads()) {
-					String dateStr = null;
-					JSONMessage message = thread.topMessage;
-					if(threeDays.getTime().after(message.getDate())) {
-						dateStr = DATE_FORMATTER.format(message.getDate());
-					} else if(midnight.getTime().after(message.getDate())) {
-						dateStr = DAY_FORMATTER.format(message.getDate());
-					} else {
-						dateStr = TIME_FORMATTER.format(message.getDate());
-					}
-					list.add(new JSONDisplay(message, message.getSubject(), dateStr, thread.size));
-				}
-
-				setListAdapter(new ArrayAdapter<JSONDisplay>(getContext(), android.R.layout.simple_list_item_1, list));
+				showFolder();
 			}
 		});
+	}
+
+	private void showFolder() {
+		String title = state.folder.getName();
+		int unread = 0;
+		int count = state.folder.getCount();
+		if(count > 0) {
+			unread = state.folder.getUnread();
+			if(unread > 0) {
+				title += " (" + unread + " of " + count + ")";
+			} else {
+				title += " (" + count + ")";
+			}
+		}
+
+		setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
+
+		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
+		for(FolderThread thread : GUAntanamoMessaging.getCurrentThreads()) {
+			String dateStr = null;
+			JSONMessage message = thread.topMessage;
+			if(threeDays.getTime().after(message.getDate())) {
+				dateStr = DATE_FORMATTER.format(message.getDate());
+			} else if(midnight.getTime().after(message.getDate())) {
+				dateStr = DAY_FORMATTER.format(message.getDate());
+			} else {
+				dateStr = TIME_FORMATTER.format(message.getDate());
+			}
+			list.add(new JSONDisplay(message, message.getSubject(), dateStr, thread.size));
+		}
+
+		setListAdapter(new ArrayAdapter<JSONDisplay>(this, android.R.layout.simple_list_item_1, list));
 	}
 
 	private void setFolderView(ViewMode viewMode) {
@@ -126,7 +143,7 @@ public class FolderActivity extends ListActivity {
 
 		showFolder(null, false);
 	}
-
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -152,20 +169,14 @@ public class FolderActivity extends ListActivity {
 			}
 		};
 		getListView().setOnTouchListener(listener);
-		
-		FolderActivity retainedData = (FolderActivity)getLastNonConfigurationInstance();
 
-		if(retainedData == null) {
-			// No retained data from the running config change
-
-			folderName = getIntent().getStringExtra("folder");
-		} else {
-			// Retrieve stored data from before the running config changed
-
-			folderName = retainedData.folderName;
-			caller = retainedData.caller;
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+			
+			state.folderName = getIntent().getStringExtra("folder");
 		}
-
+		
 		midnight = Calendar.getInstance();
 		midnight.set(Calendar.HOUR_OF_DAY, 0);
 		midnight.set(Calendar.MINUTE, 0);
@@ -179,16 +190,9 @@ public class FolderActivity extends ListActivity {
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		if(caller != null) {
-			caller.detach();
-		}
-
-		return this;
+		state.caller.pause();
+		
+		return state;
 	}
 
 	@Override
