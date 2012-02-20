@@ -67,6 +67,10 @@ public class MessageViewActivity extends Activity {
 	
 		setTitle(sb.toString());
 	}
+	
+	private void showMessage(NavType direction, boolean refresh) {
+		showMessage(direction, refresh, true);
+	}
 
 	private void showMessage(NavType direction, boolean refresh, boolean newCaller) {
 		state.direction = direction;
@@ -75,98 +79,96 @@ public class MessageViewActivity extends Activity {
 			state.caller = null;
 		}
 		
-		state.caller = BackgroundCaller.run(state.caller, this, "Getting message", new BackgroundWorker() {
-			@Override
-			public void during(Context context) throws Exception {
-					if(direction != null || id == 0) {
-						id = GUAntanamoMessaging.getMessageId(direction);
+		if(state.direction != null || state.id == 0) {
+			state.id = GUAntanamoMessaging.getMessageId(state.direction);
+		}
+		
+		if(state.id > 0) {
+			state.caller = BackgroundCaller.run(state.caller, this, "Getting message", new BackgroundWorker() {
+				@Override
+				public void during(Context context) throws Exception {
+						state.message = GUAntanamoMessaging.setCurrentMessage(context, state.id, state.refresh);
 					}
 					
-					message = GUAntanamoMessaging.setCurrentMessage(getContext(), id, refresh);
-				}
-				
-				public void after() {
-					showMessage();
-				}
-		});
-	}
-	
-	private void showMessage() {
-					setTitle(message);
-
-					TextView dateText = (TextView)findViewById(R.id.viewDateText);
-					dateText.setText(TIMESTAMP_FORMATTER.format(message.getDate()));
-
-					TextView fromText = (TextView)findViewById(R.id.viewFromText);
-					fromText.setText(message.getFrom());
-
-					TextView toText = (TextView)findViewById(R.id.viewToText);
-					if(message.getTo() != null) {
-						toText.setText(message.getTo());
-						findViewById(R.id.viewTo).setVisibility(View.VISIBLE);
-					} else {
-						// TODO: Why doesn't this hide properly?
-						findViewById(R.id.viewTo).setVisibility(View.GONE);
+					public void after() {
+						showMessage();
 					}
-
-					TextView subjectText = (TextView)findViewById(R.id.viewSubjectText);
-					if(message.getSubject() != null) {
-						subjectText.setText(message.getSubject());
-						findViewById(R.id.viewSubject).setVisibility(View.VISIBLE);
-					} else {
-						// TODO: Why doesn't this hide properly?
-						findViewById(R.id.viewSubject).setVisibility(View.GONE);
-					}
-
-					TextView inReplyToText = (TextView)findViewById(R.id.viewInReplyToText);
-					List<Integer> parents = message.getInReplyToHierarchy();
-					List<Integer> children = message.getReplyToBy();
-					StringBuilder replyStr = new StringBuilder();
-					if(parents.size() > 0) {
-						replyStr.append(parents.get(0));
-						if(parents.size() > 1) {
-							replyStr.append(" [").append(parents.size() - 1).append(" more]");
-						}
-					}
-					if(children.size() > 0) {
-						if(replyStr.length() > 0) {
-							replyStr.append(" / ");
-						}
-						if(children.size() != 1) {
-							replyStr.append(children.size()).append(" replies");
-						} else {
-							replyStr.append("1 reply");
-						}
-					}
-					if(replyStr.length() > 0) {
-						inReplyToText.setText(replyStr);
-						findViewById(R.id.viewInReplyToText).setVisibility(View.VISIBLE);
-					} else {
-						findViewById(R.id.viewInReplyToText).setVisibility(View.GONE);
-					}
-
-					TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
-					if(message.getBody() != null) {
-						bodyText.setText(message.getBody());
-					} else {
-						bodyText.setText("");
-					}
-					bodyText.scrollTo(0, 0);
-
-					if(!message.isRead()) {
-						try {
-							GUAntanamoMessaging.markCurrentMessageRead(getContext());
-						} catch(JSONException e) {
-							GUAntanamo.handleException(getContext(), "Cannot mark message", e);
-						}
-					}
-				}
-			});
+				});
 		} else {
 			setResult(RESULT_OK);
 			finish();
+		}	
+	}
+	
+	private void showMessage() {
+		setTitle(state.message);
+
+		TextView dateText = (TextView)findViewById(R.id.viewDateText);
+		dateText.setText(TIMESTAMP_FORMATTER.format(state.message.getDate()));
+
+		TextView fromText = (TextView)findViewById(R.id.viewFromText);
+		fromText.setText(state.message.getFrom());
+
+		TextView toText = (TextView)findViewById(R.id.viewToText);
+		if(state.message.getTo() != null) {
+			toText.setText(state.message.getTo());
+			findViewById(R.id.viewTo).setVisibility(View.VISIBLE);
+		} else {
+			// TODO: Why doesn't this hide properly?
+			findViewById(R.id.viewTo).setVisibility(View.GONE);
 		}
 
+		TextView subjectText = (TextView)findViewById(R.id.viewSubjectText);
+		if(state.message.getSubject() != null) {
+			subjectText.setText(state.message.getSubject());
+			findViewById(R.id.viewSubject).setVisibility(View.VISIBLE);
+		} else {
+			// TODO: Why doesn't this hide properly?
+			findViewById(R.id.viewSubject).setVisibility(View.GONE);
+		}
+
+		TextView inReplyToText = (TextView)findViewById(R.id.viewInReplyToText);
+		List<Integer> parents = state.message.getInReplyToHierarchy();
+		List<Integer> children = state.message.getReplyToBy();
+		StringBuilder replyStr = new StringBuilder();
+		if(parents.size() > 0) {
+			replyStr.append(parents.get(0));
+			if(parents.size() > 1) {
+				replyStr.append(" [").append(parents.size() - 1).append(" more]");
+			}
+		}
+		if(children.size() > 0) {
+			if(replyStr.length() > 0) {
+				replyStr.append(" / ");
+			}
+			if(children.size() != 1) {
+				replyStr.append(children.size()).append(" replies");
+			} else {
+				replyStr.append("1 reply");
+			}
+		}
+		if(replyStr.length() > 0) {
+			inReplyToText.setText(replyStr);
+			findViewById(R.id.viewInReplyToText).setVisibility(View.VISIBLE);
+		} else {
+			findViewById(R.id.viewInReplyToText).setVisibility(View.GONE);
+		}
+
+		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
+		if(state.message.getBody() != null) {
+			bodyText.setText(state.message.getBody());
+		} else {
+			bodyText.setText("");
+		}
+		bodyText.scrollTo(0, 0);
+
+		if(!state.message.isRead()) {
+			try {
+				GUAntanamoMessaging.markCurrentMessageRead(this);
+			} catch(JSONException e) {
+				GUAntanamo.handleException(this, "Cannot mark message", e);
+			}
+		}
 	}
 
 	@Override
@@ -186,16 +188,11 @@ public class MessageViewActivity extends Activity {
 		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
 		bodyText.setMovementMethod(new ScrollingMovementMethod());
 
-		MessageViewActivity retainedData = (MessageViewActivity)getLastNonConfigurationInstance();
-		if(retainedData == null) {
-			// No retained data from the running config change
-
-			id = getIntent().getIntExtra("message", 0);
-		} else {
-			// Retrieve stored data from before the running config changed
-
-			id = retainedData.id;
-			caller = retainedData.caller;
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+			
+			state.id = getIntent().getIntExtra("message", 0);
 		}
 		
 		showMessage(null, false);
@@ -238,13 +235,13 @@ public class MessageViewActivity extends Activity {
 		} else if(item.getItemId() == R.id.viewPost || item.getItemId() == R.id.viewReply) {
 			Intent intent = new Intent(this, MessagePostActivity.class);
 
-			intent.putExtra("folder", message.getFolder());
+			intent.putExtra("folder", state.message.getFolder());
 
 			if(item.getItemId() == R.id.viewReply) {
-				intent.putExtra("reply", message.getId());
-				intent.putExtra("to", message.getFrom());
-				intent.putExtra("subject", message.getSubject());
-				intent.putExtra("body", message.getBody());
+				intent.putExtra("reply", state.message.getId());
+				intent.putExtra("to", state.message.getFrom());
+				intent.putExtra("subject", state.message.getSubject());
+				intent.putExtra("body", state.message.getBody());
 			}
 
 			startActivityForResult(intent, ACTIVITY_POST);
