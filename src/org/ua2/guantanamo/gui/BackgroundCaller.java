@@ -14,7 +14,6 @@ public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 	private boolean done;
 	private Exception error;
 
-	private Context context;
 	private BackgroundWorker worker;
 	private Dialog dialog;
 	
@@ -44,7 +43,7 @@ public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 	@Override
 	protected Object doInBackground(Object... args) {
 		try {
-			worker.during(context);
+			worker.during();
 		} catch(Exception e) {
 			error = e;
 		}
@@ -57,19 +56,16 @@ public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 		
 		dialog.dismiss();
 
-		if(context == null) {
-			Log.e(TAG, "No context, unable to continue");
-			return;
-		}
-
 		check();
 	}
 	
-	private void reset(Context context, BackgroundWorker worker) {
-		this.context = context;
+	private void reset(BackgroundWorker worker) {
 		this.worker = worker;
 		
 		if(!done) {
+			worker.start(msg);
+			
+			// Move to Activity
 			dialog = ProgressDialog.show(context, "", msg + "...", true);
 		}
 	}
@@ -77,7 +73,6 @@ public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 	public void pause() {
 		dialog.dismiss();
 		
-		context = null;
 		worker = null;
 	}
 
@@ -87,6 +82,9 @@ public class BackgroundCaller extends AsyncTask<Object, Object, Object> {
 			if(error == null) {
 				worker.after();
 			} else {
+				worker.error(error);
+				
+				// Move to Activity
 				AlertDialog.Builder builder = new AlertDialog.Builder(context);
 				String errMsg = msg + " failed";
 				Log.e(TAG, errMsg, error);
