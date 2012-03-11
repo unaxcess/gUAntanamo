@@ -1,13 +1,18 @@
 package org.ua2.guantanamo;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.Principal;
+import java.util.zip.GZIPInputStream;
 
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthState;
@@ -17,6 +22,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -35,6 +41,30 @@ public class GUAntanamoClient extends JSONClient {
 
 	private static final String TAG = GUAntanamoClient.class.getName();
 
+    private static class GzipDecompressingEntity extends HttpEntityWrapper {
+
+        public GzipDecompressingEntity(final HttpEntity entity) {
+            super(entity);
+        }
+
+        @Override
+        public InputStream getContent()
+            throws IOException, IllegalStateException {
+
+            // the wrapped entity's getContent() decides about repeatability
+            InputStream wrappedin = wrappedEntity.getContent();
+
+            return new GZIPInputStream(wrappedin);
+        }
+
+        @Override
+        public long getContentLength() {
+            // length of ungzipped content is not known
+            return -1;
+        }
+
+    }
+
 	public GUAntanamoClient(String url, final String username, final String password) {
 		super();
 
@@ -49,7 +79,10 @@ public class GUAntanamoClient extends JSONClient {
 			}
 		};
 
-		HttpRequestInterceptor interceptor = new HttpRequestInterceptor() {
+		Log.i(TAG, "Creating HTTP client");
+		client = new DefaultHttpClient();
+
+		client.addRequestInterceptor(new HttpRequestInterceptor() {
 			public void process(final HttpRequest request, final HttpContext context) throws HttpException, IOException {
 				AuthState authState = (AuthState)context.getAttribute(ClientContext.TARGET_AUTH_STATE);
 				CredentialsProvider provider = (CredentialsProvider)context.getAttribute(ClientContext.CREDS_PROVIDER);
@@ -74,11 +107,36 @@ public class GUAntanamoClient extends JSONClient {
 					}
 				}
 			}
-		};
+		}, 0);
 
-		Log.i(TAG, "Creating HTTP client");
-		client = new DefaultHttpClient();
-		client.addRequestInterceptor(interceptor, 0);
+        client.addRequestInterceptor(new HttpRequestInterceptor() {
+            public void process(
+                    final HttpRequest request,
+                    final HttpContext context) throws HttpException, IOException {
+                if (!request.containsHeader("Accept-Encoding")) {
+                    request.addHeader("Accept-Encoding", "gzip");
+                }
+            }
+
+        });
+
+        client.addResponseInterceptor(new HttpResponseInterceptor() {
+            public void process(
+                    final HttpResponse response,
+                    final HttpContext context) throws HttpException, IOException {
+                HttpEntity entity = response.getEntity();
+                Header ceheader = entity.getContentEncoding();
+                if (ceheader != null) {
+                    HeaderElement[] codecs = ceheader.getElements();
+                    for (int i = 0; i < codecs.length; i++) {
+                        if (codecs[i].getName().equalsIgnoreCase("gzip")) {
+                            response.setEntity(new GzipDecompressingEntity(response.getEntity()));
+                            return;
+                        }
+                    }
+                }
+            }
+        });
 	}
 
 	public void start() {
