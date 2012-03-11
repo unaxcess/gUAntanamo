@@ -6,7 +6,6 @@ import java.util.Date;
 
 import org.json.JSONException;
 
-import android.content.Context;
 import android.util.Log;
 
 /**
@@ -22,8 +21,6 @@ import android.util.Log;
  */
 public abstract class CacheItem<T> {
 	
-	private DatabaseHelper helper;
-
 	private String type;
 	private String id;
 	private Date lastUpdate;
@@ -35,18 +32,21 @@ public abstract class CacheItem<T> {
 
 	private static final DateFormat LASTUPDATE_FORMATTER = new SimpleDateFormat("dd/MM,HH:mm:ss");
 
-	public CacheItem(Context context, String type, String itemId) {
+	public CacheItem(String type, String itemId, boolean refresh) {
 		Log.d(TAG, "Creating " + type + "=" + itemId);
 
-		this.helper = new DatabaseHelper(context);
 		this.type = type;
 
 		this.id = itemId;
 		if(this.id == null) {
 			this.id = "";
 		}
+		
+		if(refresh) {
+			return;
+		}
 
-		CacheRow row = helper.loadRow(type, id);
+		CacheRow row = DatabaseUtils.loadRow(type, id);
 		if(row != null) {
 			lastUpdate = row.lastUpdate;
 			data = row.data;
@@ -59,15 +59,11 @@ public abstract class CacheItem<T> {
 		}
 	}
 
-	public void close() {
-		helper.close();
-	}
-	
 	/**
 	 * Write the item to backing store
 	 */
 	public void save() {
-		helper.saveRow(type, id, lastUpdate, data);
+		DatabaseUtils.saveRow(type, id, lastUpdate, data);
 	}
 	
 	/**
@@ -118,18 +114,6 @@ public abstract class CacheItem<T> {
 		return item;
 	}
 	
-	public T getAndClose(boolean refresh) {
-		if(refresh) {
-			clear();
-		}
-		
-		getItem();
-		
-		close();
-		
-		return item;
-	}
-
 	/**
 	 * Indicates whether the data was sourced from the cache or not
 	 * This is automatically updated by called getItem

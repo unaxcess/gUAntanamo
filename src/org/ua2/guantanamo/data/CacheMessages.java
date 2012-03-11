@@ -14,14 +14,12 @@ import org.ua2.json.JSONItem;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
-import android.content.Context;
-
 public class CacheMessages extends CacheItem<List<JSONMessage>> {
 	
 	private String folderName;
 	
-	public CacheMessages(Context context, String folderName) throws JSONException {
-		super(context, "folder", folderName + "/" + GUAntanamo.getViewMode(false).name());
+	public CacheMessages(String folderName, boolean refresh) throws JSONException {
+		super("folder", folderName + "/" + GUAntanamo.getViewMode(false).name(), refresh);
 		
 		this.folderName = folderName;
 	}

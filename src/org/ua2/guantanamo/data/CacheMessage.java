@@ -5,14 +5,12 @@ import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
-import android.content.Context;
-
 public class CacheMessage extends CacheItem<JSONMessage> {
 	
 	private int id;
 
-	public CacheMessage(Context context, int id) throws JSONException {
-		super(context, "message", Integer.toString(id));
+	public CacheMessage(int id, boolean refresh) throws JSONException {
+		super("message", Integer.toString(id), refresh);
 		
 		this.id = id;
 	}
@@ -34,5 +32,9 @@ public class CacheMessage extends CacheItem<JSONMessage> {
 	@Override
 	protected JSONMessage toItem(String data) throws JSONException {
 		return new JSONMessage(JSONWrapper.parse(data).getObject());
+	}
+
+	public static JSONMessage getMessage(int id, boolean refresh) throws JSONException {
+		return new CacheMessage(id, refresh).getItem();
 	}
 }

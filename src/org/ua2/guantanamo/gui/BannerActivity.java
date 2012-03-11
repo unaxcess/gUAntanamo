@@ -20,10 +20,10 @@ public class BannerActivity extends Activity {
 	private static final long ONE_DAY = 24 * 60;
 	private static final String PREFERENCE = "bannerHash";
 
-	private class CacheBanner extends CacheItem<JSONObject> {
+	private static class CacheSystem extends CacheItem<JSONObject> {
 
-		public CacheBanner(Context context) throws JSONException {
-			super(context, "system", null);
+		public CacheSystem() throws JSONException {
+			super("system", null, false);
 		}
 
 		@Override
@@ -40,6 +40,10 @@ public class BannerActivity extends Activity {
 		@Override
 		protected JSONObject toItem(String data) throws JSONException {
 			return JSONWrapper.parse(data).getObject();
+		}
+		
+		public static JSONObject getSystem() throws JSONException {
+			return new CacheSystem().getItem();
 		}
 	};
 	
@@ -80,7 +84,7 @@ public class BannerActivity extends Activity {
 		state.caller = BackgroundCaller.run(state.caller, this, "Getting system", new BackgroundWorker() {
 			@Override
 			public void during(Context context) throws Exception {
-				state.system = new CacheBanner(context).getAndClose(false);
+				state.system = CacheSystem.getSystem();
 			}
 
 			@Override

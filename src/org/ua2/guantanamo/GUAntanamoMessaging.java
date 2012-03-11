@@ -149,7 +149,7 @@ public class GUAntanamoMessaging {
 
 		Map<String, JSONFolder> items = new TreeMap<String, JSONFolder>();
 
-		Collection<JSONFolder> list = new CacheFolders(context).getAndClose(refresh);
+		Collection<JSONFolder> list = CacheFolders.getFolders(refresh);
 		
 		for(JSONFolder item : list) {
 			items.put(getFolderKey(item.getName()), item);
@@ -203,10 +203,7 @@ public class GUAntanamoMessaging {
 		currentFolder = new CurrentFolder();
 		currentFolder.folder = getFolder(context, name);
 		
-		CacheMessages cache = new CacheMessages(context, name);
-		if(refresh) {
-			cache.clear();
-		}
+		CacheMessages cache = new CacheMessages(name, refresh);
 		List<JSONMessage> messages = cache.getItem();
 		
 		// First group them into threads
@@ -241,7 +238,6 @@ public class GUAntanamoMessaging {
 				unread++;
 			}
 		}
-		cache.close();
 		
 		Log.i(TAG, "Adding " + threads.size() + " threads to current folder");
 		currentFolder.threads.addAll(threads.values());
@@ -346,7 +342,7 @@ public class GUAntanamoMessaging {
 		int location = 0;
 		int index = 0;
 
-		JSONMessage message = new CacheMessage(context, id).getAndClose(refresh);
+		JSONMessage message = CacheMessage.getMessage(id, refresh);
 
 		setCurrentFolder(context, message.getFolder(), refresh);
 		

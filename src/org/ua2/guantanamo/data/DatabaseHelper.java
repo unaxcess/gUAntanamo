@@ -12,7 +12,7 @@ import android.util.Log;
 class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String DATABASE_NAME = "cache.db";
 	private static final int DATABASE_VERSION = 1;
-
+	
 	private SQLiteDatabase db;
 	private static final String ITEM_TABLE = "item";
 	private SQLiteStatement itemInsert;
@@ -22,19 +22,15 @@ class DatabaseHelper extends SQLiteOpenHelper {
 
 	private static final String TAG = DatabaseHelper.class.getName();
 
-	public DatabaseHelper(Context context) {
+	DatabaseHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-	}
 
-	private void init() {
-		if(db == null || !db.isOpen()) {
-			Log.i(TAG, "Initialising database objects");
+		Log.i(TAG, "Initialising database objects");
 
-			db = getWritableDatabase();
+		db = getWritableDatabase();
 
-			itemInsert = db.compileStatement(ITEM_INSERT);
-			itemDelete = db.compileStatement(ITEM_DELETE);
-		}
+		itemInsert = db.compileStatement(ITEM_INSERT);
+		itemDelete = db.compileStatement(ITEM_DELETE);
 	}
 
 	@Override
@@ -62,9 +58,7 @@ class DatabaseHelper extends SQLiteOpenHelper {
 		super.close();
 	}
 
-	public CacheRow loadRow(String type, String id) {
-		init();
-
+	CacheRow loadRow(String type, String id) {
 		Cursor cursor = db.rawQuery("select lastUpdate,data from " + ITEM_TABLE + " where type=? and id=?", new String[] { type, id });
 		CacheRow row = null;
 		if(cursor.moveToFirst()) {
@@ -76,9 +70,7 @@ class DatabaseHelper extends SQLiteOpenHelper {
 		return row;
 	}
 
-	public void saveRow(String type, String id, Date lastUpdate, String data) {
-		init();
-
+	void saveRow(String type, String id, Date lastUpdate, String data) {
 		int col = 1;
 
 		itemDelete.bindString(col++, type);

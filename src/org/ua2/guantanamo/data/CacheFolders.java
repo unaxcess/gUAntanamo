@@ -12,8 +12,6 @@ import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONItem;
 import org.ua2.json.JSONWrapper;
 
-import android.content.Context;
-
 /**
  * Reusable cache for folders as it's useful to several classes
  * 
@@ -22,8 +20,8 @@ import android.content.Context;
  */
 public class CacheFolders extends CacheItem<Collection<JSONFolder>> {
 
-	public CacheFolders(Context context) {
-		super(context, "folders", null);
+	public CacheFolders(boolean refresh) {
+		super("folders", null, refresh);
 	}
 
 	private Collection<JSONFolder> convert(JSONArray array) throws JSONException {
@@ -52,6 +50,10 @@ public class CacheFolders extends CacheItem<Collection<JSONFolder>> {
 	@Override
 	protected String toData(Collection<JSONFolder> folders) {
 		return JSONItem.collectionToString(folders);
+	}
+
+	public static Collection<JSONFolder> getFolders(boolean refresh) {
+		return new CacheFolders(refresh).getItem();
 	}
 
 }
