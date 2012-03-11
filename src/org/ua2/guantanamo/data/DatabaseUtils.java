@@ -15,6 +15,10 @@ class DatabaseUtils {
 	public static void setContext(Context context) {
 		LOCK.lock();
 		
+		if(HELPER != null) {
+			HELPER.close();
+		}
+		
 		if(context != null) {
 			HELPER = new DatabaseHelper(context);
 			
