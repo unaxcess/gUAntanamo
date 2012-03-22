@@ -28,19 +28,23 @@ import android.widget.Spinner;
 
 public class MessagePostActivity extends Activity {
 
-	private boolean quickMode;
-	private int replyId;
-	private String folder;
-	private String to;
-	private String subject;
-	private String body;
-
+	private static class State {
+		boolean quickMode;
+		int replyId;
+		String folder;
+		String to;
+		String subject;
+		String body;
+		
+		BackgroundCaller caller;
+	}
+	
+	private State state;
+	
 	private Spinner folderList;
 	private EditText toText;
 	private EditText subjectText;
 	private EditText bodyText;
-
-	private BackgroundCaller caller;
 
 	private static final String TAG = MessagePostActivity.class.getName();
 
@@ -50,38 +54,26 @@ public class MessagePostActivity extends Activity {
 
 		setContentView(R.layout.post);
 
-		MessagePostActivity retainedData = (MessagePostActivity)getLastNonConfigurationInstance();
-
-		if(retainedData == null) {
-			// No retained data from the running config change
-
-			quickMode = getIntent().getBooleanExtra("quickMode", false);
-			replyId = getIntent().getIntExtra("reply", 0);
-			folder = getIntent().getStringExtra("folder");
-			to = getIntent().getStringExtra("to");
-			subject = getIntent().getStringExtra("subject");
-			body = getIntent().getStringExtra("body");
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
 			
-		} else {
-			// Retrieve stored data from before the running config changed
-
-			quickMode = retainedData.quickMode;
-			replyId = retainedData.replyId;
-			folder = retainedData.folder;
-			to = retainedData.to;
-			subject = retainedData.subject;
-			body = retainedData.body;
-					
+			state.quickMode = getIntent().getBooleanExtra("quickMode", false);
+			state.replyId = getIntent().getIntExtra("reply", 0);
+			state.folder = getIntent().getStringExtra("folder");
+			state.to = getIntent().getStringExtra("to");
+			state.subject = getIntent().getStringExtra("subject");
+			state.body = getIntent().getStringExtra("body");
 		}
 		
 		folderList = (Spinner)findViewById(R.id.postFolderList);
 		
 		List<String> names = new ArrayList<String>();
 
-		if(quickMode) {
-			names.add(folder);
+		if(state.quickMode) {
+			names.add(state.folder);
 		} else {
-			for(JSONFolder folder : GUAntanamoMessaging.getFolderList(this, false)) {
+			for(JSONFolder folder : GUAntanamoMessaging.getFolderList(false)) {
 				names.add(folder.getName());
 			}
 		}
@@ -99,11 +91,11 @@ public class MessagePostActivity extends Activity {
 			}
 		});
 		
-		if(folder != null) {
+		if(state.folder != null) {
 			int pos = 0;
 			for(String name : names) {
-				Log.i(TAG, "Checking " + name + " -vs- " + folder);
-				if(name.equals(folder)) {
+				Log.i(TAG, "Checking " + name + " -vs- " + state.folder);
+				if(name.equals(state.folder)) {
 					folderList.setSelection(pos);
 					break;
 				}
@@ -112,32 +104,29 @@ public class MessagePostActivity extends Activity {
 		}
 		
 		toText = (EditText)findViewById(R.id.postToText);
-		if(to != null) {
-			toText.setText(to);
+		if(state.to != null) {
+			toText.setText(state.to);
 		}
 
 		subjectText = (EditText)findViewById(R.id.postSubjectText);
-		if(subject != null) {
-			subjectText.setText(subject);
+		if(state.subject != null) {
+			subjectText.setText(state.subject);
 		}
 		
 		bodyText = (EditText)findViewById(R.id.postBodyText);
-		bodyText.setText("");
+		bodyText.setText(state.body);
 		bodyText.setMovementMethod(new ScrollingMovementMethod());
 
-		if(quickMode) {
+		if(state.quickMode) {
 			findViewById(R.id.postFolder).setVisibility(View.GONE);
 			findViewById(R.id.postSubject).setVisibility(View.GONE);
 		}
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		return this;
+		state.caller.pause();
+		
+		return state;
 	}
 
 	@Override
@@ -175,8 +164,8 @@ public class MessagePostActivity extends Activity {
 					String subject = subjectText.getText().toString();
 					String body = bodyText.getText().toString();
 
-					Log.i(TAG, "Posting message to " + replyId + " / " + folder + ", " + to + " " + subject + " " + body);
-					GUAntanamo.getClient().postMessage(replyId, folder, to, subject, body);
+					Log.i(TAG, "Posting message to " + state.replyId + " / " + folder + ", " + to + " " + subject + " " + body);
+					GUAntanamo.getClient().postMessage(state.replyId, folder, to, subject, body);
 
 					return null;
 				} catch(JSONException e) {

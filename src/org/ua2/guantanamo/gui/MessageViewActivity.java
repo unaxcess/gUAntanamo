@@ -35,7 +35,6 @@ public class MessageViewActivity extends Activity {
 	private static final int ACTIVITY_POST = 1;
 
 	private GestureDetector detector;
-	private BackgroundCaller caller;
 
 	private static class State {
 		int id;
@@ -84,14 +83,19 @@ public class MessageViewActivity extends Activity {
 		}
 		
 		if(state.id > 0) {
-			state.caller = BackgroundCaller.run(state.caller, this, "Getting message", new BackgroundWorker() {
+			state.caller = BackgroundCaller.run(state.caller, "Getting message", new BackgroundWorker() {
 				@Override
-				public void during(Context context) throws Exception {
-						state.message = GUAntanamoMessaging.setCurrentMessage(context, state.id, state.refresh);
+				public void during() throws Exception {
+						state.message = GUAntanamoMessaging.setCurrentMessage(state.id, state.refresh);
 					}
 					
 					public void after() {
 						showMessage();
+					}
+
+					@Override
+					public Context getContext() {
+						return MessageViewActivity.this;
 					}
 				});
 		} else {
@@ -164,7 +168,7 @@ public class MessageViewActivity extends Activity {
 
 		if(!state.message.isRead()) {
 			try {
-				GUAntanamoMessaging.markCurrentMessageRead(this);
+				GUAntanamoMessaging.markCurrentMessageRead();
 			} catch(JSONException e) {
 				GUAntanamo.handleException(this, "Cannot mark message", e);
 			}
@@ -205,12 +209,9 @@ public class MessageViewActivity extends Activity {
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		return this;
+		state.caller.pause();
+		
+		return state;
 	}
 
 	@Override

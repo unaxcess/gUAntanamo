@@ -114,6 +114,7 @@ public class GUAntanamoClient extends JSONClient {
                     final HttpRequest request,
                     final HttpContext context) throws HttpException, IOException {
                 if (!request.containsHeader("Accept-Encoding")) {
+                	Log.d(TAG, "Adding gzip acceptance header");
                     request.addHeader("Accept-Encoding", "gzip");
                 }
             }
@@ -130,6 +131,7 @@ public class GUAntanamoClient extends JSONClient {
                     HeaderElement[] codecs = ceheader.getElements();
                     for (int i = 0; i < codecs.length; i++) {
                         if (codecs[i].getName().equalsIgnoreCase("gzip")) {
+                        	Log.d(TAG, "Recieved gzip'd response of " + response.getEntity().getContentLength());
                             response.setEntity(new GzipDecompressingEntity(response.getEntity()));
                             return;
                         }
@@ -176,7 +178,6 @@ public class GUAntanamoClient extends JSONClient {
 			}
 
 			HttpEntity entity = response.getEntity();
-			Log.d(TAG, "HTTP response entity " + entity);
 
 			if(entity == null) {
 				clientResponse.ok = false;
@@ -188,6 +189,7 @@ public class GUAntanamoClient extends JSONClient {
 			clientResponse.ok = true;
 			clientResponse.data = EntityUtils.toString(entity);
 
+			Log.d(TAG, "HTTP response " + entity.getContentLength() + " of " + entity.getContentType().getValue() + " -> " + (clientResponse.data != null ? clientResponse.data.length() : -1));
 		} catch(IOException e) {
 			if(request != null) {
 				request.abort();

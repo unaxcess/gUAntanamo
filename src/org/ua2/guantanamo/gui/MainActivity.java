@@ -67,14 +67,19 @@ public class MainActivity extends ListActivity {
 			state.caller = null;
 		}
 		
-		state.caller = BackgroundCaller.run(state.caller, this, "Getting folders", new BackgroundWorker() {
+		state.caller = BackgroundCaller.run(state.caller, "Getting folders", new BackgroundWorker() {
 			@Override
-			public void during(Context context) throws Exception {
-				state.folders = GUAntanamoMessaging.getFolderList(context, state.refresh);
+			public void during() throws Exception {
+				state.folders = GUAntanamoMessaging.getFolderList(state.refresh);
 			}
 			
 			public void after() {
 				showFolders();
+			}
+
+			@Override
+			public Context getContext() {
+				return MainActivity.this;
 			}
 		});
 	}
@@ -108,13 +113,14 @@ public class MainActivity extends ListActivity {
 		JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
 		if(folder != null) {
 			for(int index = 0; index < list.size(); index++) {
-				Log.d(TAG, "Restoring list position " + index);
-				if(folder.getName().compareTo(list.get(index).object.getName()) >= 0) {
+				if(folder.getName().compareTo(list.get(index).object.getName()) <= 0) {
+					Log.d(TAG, "Setting folder selection to " + index);
 					getListView().setSelection(index); 
 					break;
 				}
 			}
 		} else {
+			Log.d(TAG, "Setting folder selection to top");
 			getListView().setSelection(0);
 		}
 	}

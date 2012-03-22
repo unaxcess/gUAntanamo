@@ -80,16 +80,20 @@ public class BannerActivity extends Activity {
 			state = new State();
 		}
 		
-		showBanner();
-		state.caller = BackgroundCaller.run(state.caller, this, "Getting system", new BackgroundWorker() {
+		state.caller = BackgroundCaller.run(state.caller, "Getting system", new BackgroundWorker() {
 			@Override
-			public void during(Context context) throws Exception {
+			public void during() throws Exception {
 				state.system = CacheSystem.getSystem();
 			}
 
 			@Override
 			public void after() {
 				showBanner();
+			}
+
+			@Override
+			public Context getContext() {
+				return BannerActivity.this;
 			}
 		});
 	}

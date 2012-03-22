@@ -19,7 +19,6 @@ import org.ua2.guantanamo.gui.NavType;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
 
-import android.content.Context;
 import android.util.Log;
 
 public class GUAntanamoMessaging {
@@ -69,12 +68,12 @@ public class GUAntanamoMessaging {
 		return true;
 	}
 	
-	public static Collection<JSONFolder> getFolderList(Context context, boolean refresh) {
-		return getFolders(context, refresh).values();
+	public static Collection<JSONFolder> getFolderList(boolean refresh) {
+		return getFolders(refresh).values();
 	}
 
-	public static JSONFolder getFolder(Context context, String name) {
-		return getFolders(context, false).get(name.toLowerCase());
+	public static JSONFolder getFolder(String name) {
+		return getFolders(false).get(name.toLowerCase());
 	}
 	
 	public static JSONFolder getCurrentFolder() {
@@ -84,13 +83,13 @@ public class GUAntanamoMessaging {
 		return currentFolder.folder;
 	}
 
-	public static JSONFolder getFolder(Context context, NavType direction) {
+	public static JSONFolder getFolder(NavType direction) {
 		Log.d(TAG, "Data state currentFolder=" + (currentFolder != null));
 		if(currentFolder == null) {
 			return null;
 		}
 		
-		JSONFolder[] items = getFolders(context, false).values().toArray(new JSONFolder[] {} );
+		JSONFolder[] items = getFolders(false).values().toArray(new JSONFolder[] {} );
 		int index = 0;
 		for(; index < items.length; index++) {
 			if(items[index] == currentFolder.folder) {
@@ -140,7 +139,7 @@ public class GUAntanamoMessaging {
 		return 10;
 	}
 
-	private static Map<String, JSONFolder> getFolders(Context context, boolean refresh) {
+	private static Map<String, JSONFolder> getFolders(boolean refresh) {
 		if(folders != null && !refresh) {
 			return folders;
 		}
@@ -158,7 +157,7 @@ public class GUAntanamoMessaging {
 
 		if(!refresh) {
 			for(JSONFolder item : folders.values()) {
-				JSONFolder folder = getFolder(context, item.getName());
+				JSONFolder folder = getFolder(item.getName());
 				if(folder != null) {
 					item.setUnread(folder.getUnread());
 				}
@@ -195,13 +194,13 @@ public class GUAntanamoMessaging {
 	 * @param messages
 	 * @throws JSONException 
 	 */
-	public static JSONFolder setCurrentFolder(Context context, String name, boolean refresh) throws JSONException {
+	public static JSONFolder setCurrentFolder(String name, boolean refresh) throws JSONException {
 		int unread = 0;
 		
 		Log.i(TAG, "Setting current folder name=" + name + " refresh=" + refresh);
 		
 		currentFolder = new CurrentFolder();
-		currentFolder.folder = getFolder(context, name);
+		currentFolder.folder = getFolder(name);
 		
 		CacheMessages cache = new CacheMessages(name, refresh);
 		List<JSONMessage> messages = cache.getItem();
@@ -336,7 +335,7 @@ public class GUAntanamoMessaging {
 		return currentFolder.threads.get(location).messages.get(index).getId();
 	}
 
-	public static JSONMessage setCurrentMessage(Context context, int id, boolean refresh) throws JSONException {
+	public static JSONMessage setCurrentMessage(int id, boolean refresh) throws JSONException {
 		Log.i(TAG, "Setting current message to " + id);
 		
 		int location = 0;
@@ -344,7 +343,7 @@ public class GUAntanamoMessaging {
 
 		JSONMessage message = CacheMessage.getMessage(id, refresh);
 
-		setCurrentFolder(context, message.getFolder(), refresh);
+		setCurrentFolder(message.getFolder(), refresh);
 		
 		InternalFolderThread thread = currentFolder.threads.get(location);
 		boolean loop = true;
@@ -376,14 +375,14 @@ public class GUAntanamoMessaging {
 		return message;
 	}
 
-	public static void markCurrentMessageRead(Context context) throws JSONException {
+	public static void markCurrentMessageRead() throws JSONException {
 		JSONMessage message = currentFolder.threads.get(currentFolder.location).messages.get(currentFolder.index);
 		if(!message.isRead()) {
 			
 			
 			message.setRead(true);
 			markedMessageIds.add(message.getId());
-			JSONFolder folder = getFolder(context, message.getFolder());
+			JSONFolder folder = getFolder(message.getFolder());
 			if(folder != null) {
 				folder.setUnread(folder.getUnread() - 1);
 			}

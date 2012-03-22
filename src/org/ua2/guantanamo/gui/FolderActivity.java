@@ -86,22 +86,27 @@ public class FolderActivity extends ListActivity {
 			state.caller = null;
 		}
 		
-		state.caller = BackgroundCaller.run(state.caller, this, "Getting messages", new BackgroundWorker() {
+		state.caller = BackgroundCaller.run(state.caller, "Getting messages", new BackgroundWorker() {
 			@Override
-			public void during(Context context) throws Exception {
+			public void during() throws Exception {
 				if(state.direction != null || state.folderName == null) {
-					JSONFolder folder = GUAntanamoMessaging.getFolder(context, state.direction);
+					JSONFolder folder = GUAntanamoMessaging.getFolder(state.direction);
 					if(folder != null) {
 						state.folderName = folder.getName();
 					}
 				}
 				
-				state.folder = GUAntanamoMessaging.setCurrentFolder(context, state.folderName, state.refresh);
+				state.folder = GUAntanamoMessaging.setCurrentFolder(state.folderName, state.refresh);
 			}
 
 			@Override
 			public void after() {
 				showFolder();
+			}
+
+			@Override
+			public Context getContext() {
+				return FolderActivity.this;
 			}
 		});
 	}
