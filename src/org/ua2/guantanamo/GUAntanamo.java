@@ -12,6 +12,8 @@ import android.widget.Toast;
  */
 public class GUAntanamo {
 
+	public static final int MESSAGING_REFRESH_MINUTES = 10;
+
 	private static GUAntanamoClient client;
 
 	private static String url;

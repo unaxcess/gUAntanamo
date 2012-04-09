@@ -8,23 +8,23 @@ import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
-import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
 import org.ua2.json.JSONItem;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
-public class CacheMessages extends CacheItem<List<JSONMessage>> {
-	
-	private String folderName;
-	
-	public CacheMessages(String folderName, boolean refresh) throws JSONException {
-		super("folder", folderName + "/" + GUAntanamo.getViewMode(false).name(), refresh);
-		
-		this.folderName = folderName;
+public class CacheMessages extends CacheTask<List<JSONMessage>> {
+	@Override
+	protected String getType() {
+		return "messages";
 	}
 
-	private List<JSONMessage> toList(JSONArray array) throws JSONException {
+	@Override
+	protected String getDescription() {
+		return "folder";
+	}
+
+	private List<JSONMessage> convert(JSONArray array) throws JSONException {
 		Map<Integer, JSONMessage> map = new TreeMap<Integer, JSONMessage>();
 		for(int index = 0; index < array.length(); index++) {
 			JSONMessage item = new JSONMessage(array.getJSONObject(index));
@@ -36,22 +36,22 @@ public class CacheMessages extends CacheItem<List<JSONMessage>> {
 	}
 	
 	@Override
-	protected long getStaleMinutes() {
-		return GUAntanamoMessaging.getFolderRefreshMinutes();
+	protected int getRefreshMinutes() {
+		return GUAntanamo.MESSAGING_REFRESH_MINUTES;
 	}
 
 	@Override
-	protected List<JSONMessage> refreshItem() throws JSONException {
-		return toList(GUAntanamo.getClient().getMessages(folderName, GUAntanamo.getViewMode(false) == ViewMode.Unread, false));
+	protected List<JSONMessage> loadItem(String id) throws JSONException {
+		return convert(GUAntanamo.getClient().getMessages(id, GUAntanamo.getViewMode(false) == ViewMode.Unread, false));
 	}
 
 	@Override
-	protected List<JSONMessage> toItem(String data) throws JSONException {
-		return toList(JSONWrapper.parse(data).getArray());
+	protected List<JSONMessage> convertDataToItem(String data) throws JSONException {
+		return convert(JSONWrapper.parse(data).getArray());
 	}
 
 	@Override
-	protected String toData(List<JSONMessage> messages) {
+	protected String convertItemToData(List<JSONMessage> messages) {
 		return JSONItem.collectionToString(messages);
 	}
 }

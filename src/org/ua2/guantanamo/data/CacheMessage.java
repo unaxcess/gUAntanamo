@@ -5,36 +5,29 @@ import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
-public class CacheMessage extends CacheItem<JSONMessage> {
-	
-	private int id;
-
-	public CacheMessage(int id, boolean refresh) throws JSONException {
-		super("message", Integer.toString(id), refresh);
-		
-		this.id = id;
+public class CacheMessage extends CacheTask<JSONMessage> {
+	@Override
+	public String getType() {
+		return "message";
 	}
 
 	@Override
-	protected long getStaleMinutes() {
+	protected String getDescription() {
+		return "message";
+	}
+
+	@Override
+	public int getRefreshMinutes() {
 		return 0;
 	}
 
 	@Override
-	protected JSONMessage refreshItem() throws JSONException {
-		return new JSONMessage(GUAntanamo.getClient().getMessage(id));
-	}
-
-	protected boolean shouldRefresh() {
-		return false;
+	public JSONMessage loadItem(String id) throws JSONException {
+		return new JSONMessage(GUAntanamo.getClient().getMessage(Integer.parseInt(id)));
 	}
 
 	@Override
-	protected JSONMessage toItem(String data) throws JSONException {
+	public JSONMessage convertDataToItem(String data) throws JSONException {
 		return new JSONMessage(JSONWrapper.parse(data).getObject());
-	}
-
-	public static JSONMessage getMessage(int id, boolean refresh) throws JSONException {
-		return new CacheMessage(id, refresh).getItem();
 	}
 }

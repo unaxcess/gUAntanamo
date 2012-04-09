@@ -22,7 +22,7 @@ import org.ua2.json.JSONMessage;
 import android.util.Log;
 
 public class GUAntanamoMessaging {
-	
+
 	private static class CurrentFolder {
 		JSONFolder folder;
 		List<InternalFolderThread> threads = new ArrayList<InternalFolderThread>();

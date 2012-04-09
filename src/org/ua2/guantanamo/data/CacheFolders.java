@@ -7,7 +7,6 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
-import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONItem;
 import org.ua2.json.JSONWrapper;
@@ -18,10 +17,20 @@ import org.ua2.json.JSONWrapper;
  * @author Techno
  * 
  */
-public class CacheFolders extends CacheItem<Collection<JSONFolder>> {
+public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
+	@Override
+	protected String getType() {
+		return "message";
+	}
 
-	public CacheFolders(boolean refresh) {
-		super("folders", null, refresh);
+	@Override
+	protected String getDescription() {
+		return "folders";
+	}
+
+	@Override
+	protected int getRefreshMinutes() {
+		return GUAntanamo.MESSAGING_REFRESH_MINUTES;
 	}
 
 	private Collection<JSONFolder> convert(JSONArray array) throws JSONException {
@@ -33,27 +42,17 @@ public class CacheFolders extends CacheItem<Collection<JSONFolder>> {
 	}
 
 	@Override
-	protected long getStaleMinutes() {
-		return GUAntanamoMessaging.getFolderRefreshMinutes();
-	}
-
-	@Override
-	protected Collection<JSONFolder> refreshItem() throws JSONException {
+	protected Collection<JSONFolder> loadItem(String id) throws JSONException {
 		return convert(GUAntanamo.getClient().getFolders());
 	}
 
 	@Override
-	protected Collection<JSONFolder> toItem(String data) throws JSONException {
+	protected Collection<JSONFolder> convertDataToItem(String data) throws JSONException {
 		return convert(JSONWrapper.parse(data).getArray());
 	}
 
 	@Override
-	protected String toData(Collection<JSONFolder> folders) {
+	protected String convertItemToData(Collection<JSONFolder> folders) {
 		return JSONItem.collectionToString(folders);
 	}
-
-	public static Collection<JSONFolder> getFolders(boolean refresh) {
-		return new CacheFolders(refresh).getItem();
-	}
-
 }
