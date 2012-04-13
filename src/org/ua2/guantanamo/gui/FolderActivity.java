@@ -8,13 +8,14 @@ import java.util.List;
 
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
-import org.ua2.guantanamo.GUAntanamoMessaging.FolderThread;
+import org.ua2.guantanamo.GUAntanamoMessaging.MessagingThread;
 import org.ua2.guantanamo.ViewMode;
+import org.ua2.guantanamo.data.CacheMessages;
+import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
 
 import android.app.ListActivity;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -61,93 +62,17 @@ public class FolderActivity extends ListActivity {
 			return subject + " [" + datetime + ", " + count + "]";
 		}
 	}
+	
+	private ItemProcessor<List<JSONMessage>> processor;
 
 	private static class State {
 		String folderName;
-		JSONFolder folder;
-		NavType direction;
-		boolean refresh;
-		
-		BackgroundCaller caller;
+		CacheMessages caller;
 	}
 	
 	private State state;
 	
 	private static final String TAG = FolderActivity.class.getName();
-	
-	private void showFolder(NavType direction, boolean refresh) {
-		showFolder(direction, refresh, true);
-	}
-	
-	private void showFolder(NavType direction, boolean refresh, boolean newCaller) {
-		state.direction = direction;
-		state.refresh = refresh;
-		if(newCaller) {
-			state.caller = null;
-		}
-		
-		state.caller = BackgroundCaller.run(state.caller, "Getting messages", new BackgroundWorker() {
-			@Override
-			public void during() throws Exception {
-				if(state.direction != null || state.folderName == null) {
-					JSONFolder folder = GUAntanamoMessaging.getFolder(state.direction);
-					if(folder != null) {
-						state.folderName = folder.getName();
-					}
-				}
-				
-				state.folder = GUAntanamoMessaging.setCurrentFolder(state.folderName, state.refresh);
-			}
-
-			@Override
-			public void after() {
-				showFolder();
-			}
-
-			@Override
-			public Context getContext() {
-				return FolderActivity.this;
-			}
-		});
-	}
-
-	private void showFolder() {
-		String title = state.folder.getName();
-		int unread = 0;
-		int count = state.folder.getCount();
-		if(count > 0) {
-			unread = state.folder.getUnread();
-			if(unread > 0) {
-				title += " (" + unread + " of " + count + ")";
-			} else {
-				title += " (" + count + ")";
-			}
-		}
-
-		setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
-
-		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
-		for(FolderThread thread : GUAntanamoMessaging.getCurrentThreads()) {
-			String dateStr = null;
-			JSONMessage message = thread.topMessage;
-			if(threeDays.getTime().after(message.getDate())) {
-				dateStr = DATE_FORMATTER.format(message.getDate());
-			} else if(midnight.getTime().after(message.getDate())) {
-				dateStr = DAY_FORMATTER.format(message.getDate());
-			} else {
-				dateStr = TIME_FORMATTER.format(message.getDate());
-			}
-			list.add(new JSONDisplay(message, message.getSubject(), dateStr, thread.size));
-		}
-
-		setListAdapter(new ArrayAdapter<JSONDisplay>(this, android.R.layout.simple_list_item_1, list));
-	}
-
-	private void setFolderView(ViewMode viewMode) {
-		GUAntanamo.setViewMode(viewMode, false);
-
-		showFolder(null, false);
-	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -174,13 +99,6 @@ public class FolderActivity extends ListActivity {
 			}
 		};
 		getListView().setOnTouchListener(listener);
-
-		state = (State)getLastNonConfigurationInstance();
-		if(state == null) {
-			state = new State();
-			
-			state.folderName = getIntent().getStringExtra("folder");
-		}
 		
 		midnight = Calendar.getInstance();
 		midnight.set(Calendar.HOUR_OF_DAY, 0);
@@ -191,13 +109,88 @@ public class FolderActivity extends ListActivity {
 		threeDays = Calendar.getInstance();
 		threeDays.add(Calendar.DATE, -3);
 
-		showFolder(null, false);
+		processor = new ItemProcessor<List<JSONMessage>>() {
+			@Override
+			public void processItem(List<JSONMessage> messages, boolean isNew) {
+				GUAntanamoMessaging.setCurrentFolder(state.folderName, messages);
+				showFolder();
+			}
+		};
+		
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+			
+			state.folderName = getIntent().getStringExtra("folder");
+			state.caller = new CacheMessages(this, processor, state.folderName);
+		}
+	}
+
+	public void onStart() {
+		super.onStart();
+
+		state.caller.attach(this, processor);
+	}
+	
+	public void onStop() {
+		super.onStop();
+
+		state.caller.detatch();
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		state.caller.pause();
-		
 		return state;
+	}
+	
+	private void showFolder(NavType direction, boolean refresh) {
+		JSONFolder folder = GUAntanamoMessaging.setCurrentFolder(direction);
+		if(folder == null) {
+			setResult(RESULT_OK);
+			finish();
+			return;
+		}
+		
+		state.caller.load(folder.getName(), refresh);
+	}
+
+	private void showFolder() {
+		JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
+		
+		String title = folder.getName();
+		int unread = 0;
+		int count = folder.getCount();
+		if(count > 0) {
+			unread = folder.getUnread();
+			if(unread > 0) {
+				title += " (" + unread + " of " + count + ")";
+			} else {
+				title += " (" + count + ")";
+			}
+		}
+
+		setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
+
+		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
+		for(MessagingThread thread : GUAntanamoMessaging.getCurrentThreads()) {
+			String dateStr = null;
+			JSONMessage message = thread.getTopMessage();
+			if(threeDays.getTime().after(message.getDate())) {
+				dateStr = DATE_FORMATTER.format(message.getDate());
+			} else if(midnight.getTime().after(message.getDate())) {
+				dateStr = DAY_FORMATTER.format(message.getDate());
+			} else {
+				dateStr = TIME_FORMATTER.format(message.getDate());
+			}
+			list.add(new JSONDisplay(message, message.getSubject(), dateStr, thread.getMessageCount()));
+		}
+
+		setListAdapter(new ArrayAdapter<JSONDisplay>(this, android.R.layout.simple_list_item_1, list));
+	}
+
+	private void setFolderView(ViewMode viewMode) {
+		GUAntanamo.setViewMode(viewMode, false);
+
+		showFolder(null, false);
 	}
 
 	@Override

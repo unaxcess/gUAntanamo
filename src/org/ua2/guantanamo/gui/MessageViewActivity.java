@@ -8,12 +8,13 @@ import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
+import org.ua2.guantanamo.data.CacheMessage;
+import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
 import org.ua2.json.JSONMessage;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -35,24 +36,78 @@ public class MessageViewActivity extends Activity {
 	private static final int ACTIVITY_POST = 1;
 
 	private GestureDetector detector;
+	
+	private ItemProcessor<JSONMessage> processor;
 
 	private static class State {
-		int id;
-		JSONMessage message;
-		NavType direction;
-		boolean refresh;
-		
-		BackgroundCaller caller;
+		CacheMessage caller;
 	}
 	
 	private State state;
 
 	private static final String TAG = MessageViewActivity.class.getName();
 
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		setContentView(R.layout.view);
+
+		DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		detector = new GestureDetector(new NavGestureDetector(metrics.widthPixels / 2, metrics.heightPixels / 2) {
+			@Override
+			protected void performAction(NavType direction) {
+				showMessage(direction, false);
+			}
+		});
+
+		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
+		bodyText.setMovementMethod(new ScrollingMovementMethod());
+		
+		processor = new ItemProcessor<JSONMessage>() {
+			@Override
+			public void processItem(JSONMessage message, boolean isNew) {
+				if(isNew) {
+					GUAntanamoMessaging.setCurrentMessage(message);
+				}
+				
+				showMessage();
+			}
+		};
+
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+			
+			int id = getIntent().getIntExtra("message", 0);
+			
+			state.caller = new CacheMessage(this, processor, id);
+		}
+	}
+	
+	public void onStart() {
+		super.onStart();
+
+		state.caller.attach(this, processor);
+	}
+	
+	public void onStop() {
+		super.onStop();
+
+		state.caller.detatch();
+		
+		setResult(RESULT_OK);
+	}
+
+	public Object onRetainNonConfigurationInstance() {
+		return state;
+	}
+
 	private void setMessageView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, false);
 		if(GUAntanamo.getViewMode(false) != viewMode) {
-			setTitle(state.message);
+			JSONMessage message = GUAntanamoMessaging.getCurrentMessage();
+			setTitle(message);
 		}
 	}
 	
@@ -68,54 +123,29 @@ public class MessageViewActivity extends Activity {
 	}
 	
 	private void showMessage(NavType direction, boolean refresh) {
-		showMessage(direction, refresh, true);
-	}
-
-	private void showMessage(NavType direction, boolean refresh, boolean newCaller) {
-		state.direction = direction;
-		state.refresh = refresh;
-		if(newCaller) {
-			state.caller = null;
-		}
-		
-		if(state.direction != null || state.id == 0) {
-			state.id = GUAntanamoMessaging.getMessageId(state.direction);
-		}
-		
-		if(state.id > 0) {
-			state.caller = BackgroundCaller.run(state.caller, "Getting message", new BackgroundWorker() {
-				@Override
-				public void during() throws Exception {
-						state.message = GUAntanamoMessaging.setCurrentMessage(state.id, state.refresh);
-					}
-					
-					public void after() {
-						showMessage();
-					}
-
-					@Override
-					public Context getContext() {
-						return MessageViewActivity.this;
-					}
-				});
-		} else {
+		JSONMessage message = GUAntanamoMessaging.getMessage(direction);
+		if(message == null) {
 			setResult(RESULT_OK);
 			finish();
-		}	
+			return;
+		}
+		
+		state.caller.load(message.getId(), refresh);
 	}
 	
 	private void showMessage() {
-		setTitle(state.message);
+		JSONMessage message = GUAntanamoMessaging.getCurrentMessage();
+		setTitle(message);
 
 		TextView dateText = (TextView)findViewById(R.id.viewDateText);
-		dateText.setText(TIMESTAMP_FORMATTER.format(state.message.getDate()));
+		dateText.setText(TIMESTAMP_FORMATTER.format(message.getDate()));
 
 		TextView fromText = (TextView)findViewById(R.id.viewFromText);
-		fromText.setText(state.message.getFrom());
+		fromText.setText(message.getFrom());
 
 		TextView toText = (TextView)findViewById(R.id.viewToText);
-		if(state.message.getTo() != null) {
-			toText.setText(state.message.getTo());
+		if(message.getTo() != null) {
+			toText.setText(message.getTo());
 			findViewById(R.id.viewTo).setVisibility(View.VISIBLE);
 		} else {
 			// TODO: Why doesn't this hide properly?
@@ -123,8 +153,8 @@ public class MessageViewActivity extends Activity {
 		}
 
 		TextView subjectText = (TextView)findViewById(R.id.viewSubjectText);
-		if(state.message.getSubject() != null) {
-			subjectText.setText(state.message.getSubject());
+		if(message.getSubject() != null) {
+			subjectText.setText(message.getSubject());
 			findViewById(R.id.viewSubject).setVisibility(View.VISIBLE);
 		} else {
 			// TODO: Why doesn't this hide properly?
@@ -132,8 +162,8 @@ public class MessageViewActivity extends Activity {
 		}
 
 		TextView inReplyToText = (TextView)findViewById(R.id.viewInReplyToText);
-		List<Integer> parents = state.message.getInReplyToHierarchy();
-		List<Integer> children = state.message.getReplyToBy();
+		List<Integer> parents = message.getInReplyToHierarchy();
+		List<Integer> children = message.getReplyToBy();
 		StringBuilder replyStr = new StringBuilder();
 		if(parents.size() > 0) {
 			replyStr.append(parents.get(0));
@@ -159,59 +189,20 @@ public class MessageViewActivity extends Activity {
 		}
 
 		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
-		if(state.message.getBody() != null) {
-			bodyText.setText(state.message.getBody());
+		if(message.getBody() != null) {
+			bodyText.setText(message.getBody());
 		} else {
 			bodyText.setText("");
 		}
 		bodyText.scrollTo(0, 0);
 
-		if(!state.message.isRead()) {
+		if(!message.isRead()) {
 			try {
 				GUAntanamoMessaging.markCurrentMessageRead();
 			} catch(JSONException e) {
 				GUAntanamo.handleException(this, "Cannot mark message", e);
 			}
 		}
-	}
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		setContentView(R.layout.view);
-
-		DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		detector = new GestureDetector(new NavGestureDetector(metrics.widthPixels / 2, metrics.heightPixels / 2) {
-			@Override
-			protected void performAction(NavType direction) {
-				showMessage(direction, false);
-			}
-		});
-
-		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
-		bodyText.setMovementMethod(new ScrollingMovementMethod());
-
-		state = (State)getLastNonConfigurationInstance();
-		if(state == null) {
-			state = new State();
-			
-			state.id = getIntent().getIntExtra("message", 0);
-		}
-		
-		showMessage(null, false);
-	}
-
-	public void onStop() {
-		super.onStop();
-		
-		setResult(RESULT_OK);
-	}
-
-	public Object onRetainNonConfigurationInstance() {
-		state.caller.pause();
-		
-		return state;
 	}
 
 	@Override
@@ -234,15 +225,17 @@ public class MessageViewActivity extends Activity {
 			showMessage(null, true);
 
 		} else if(item.getItemId() == R.id.viewPost || item.getItemId() == R.id.viewReply) {
+			JSONMessage message = GUAntanamoMessaging.getCurrentMessage();
+			
 			Intent intent = new Intent(this, MessagePostActivity.class);
 
-			intent.putExtra("folder", state.message.getFolder());
+			intent.putExtra("folder", message.getFolder());
 
 			if(item.getItemId() == R.id.viewReply) {
-				intent.putExtra("reply", state.message.getId());
-				intent.putExtra("to", state.message.getFrom());
-				intent.putExtra("subject", state.message.getSubject());
-				intent.putExtra("body", state.message.getBody());
+				intent.putExtra("reply", message.getId());
+				intent.putExtra("to", message.getFrom());
+				intent.putExtra("subject", message.getSubject());
+				intent.putExtra("body", message.getBody());
 			}
 
 			startActivityForResult(intent, ACTIVITY_POST);
@@ -283,7 +276,7 @@ public class MessageViewActivity extends Activity {
 			@Override
 			protected String doInBackground(String... params) {
 				try {
-					int id = GUAntanamoMessaging.getCurrentMessageId();
+					int id = GUAntanamoMessaging.getCurrentMessage().getId();
 
 					Log.i(TAG, "Saving message " + id);
 					GUAntanamo.getClient().saveMessage(id);

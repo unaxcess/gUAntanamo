@@ -3,7 +3,8 @@ package org.ua2.guantanamo.gui;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.ua2.guantanamo.GUAntanamo;
-import org.ua2.guantanamo.data.CacheItem;
+import org.ua2.guantanamo.data.CacheTask;
+import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
 import org.ua2.json.JSONWrapper;
 
 import android.app.Activity;
@@ -17,44 +18,50 @@ import android.widget.TextView;
 
 public class BannerActivity extends Activity {
 
-	private static final long ONE_DAY = 24 * 60;
+	private static final int ONE_DAY = 24 * 60;
 	private static final String PREFERENCE = "bannerHash";
 
-	private static class CacheSystem extends CacheItem<JSONObject> {
-
-		public CacheSystem() throws JSONException {
-			super("system", null, false);
+	private static class CacheSystem extends CacheTask<JSONObject> {
+		public CacheSystem(Context context, ItemProcessor<JSONObject> processor) {
+			super(context, processor);
+			
+			load(null, false);
 		}
 
 		@Override
-		protected long getStaleMinutes() {
+		protected String getType() {
+			return "system";
+		}
+		
+		@Override
+		protected String getDescription() {
+			return "system info";
+		}
+		
+		@Override
+		protected int getRefreshMinutes() {
 			// Once per day should be enough for a banner
 			return ONE_DAY;
 		}
 
 		@Override
-		protected JSONObject refreshItem() throws JSONException {
+		protected JSONObject loadItem(String id) throws JSONException {
 			return GUAntanamo.getClient().get("/system").getObject();
 		}
-
-		@Override
-		protected JSONObject toItem(String data) throws JSONException {
-			return JSONWrapper.parse(data).getObject();
-		}
 		
-		public static JSONObject getSystem() throws JSONException {
-			return new CacheSystem().getItem();
+		@Override
+		protected JSONObject convertDataToItem(String data) throws JSONException {
+			return JSONWrapper.parse(data).getObject();
 		}
 	};
 	
 	private TextView bannerText;
 
+	private ItemProcessor<JSONObject> processor = null;
+
 	private static class State {
-		JSONObject system;
-		
-		BackgroundCaller caller;
-	}
-	
+		CacheSystem caller;
+	}	
 	private State state;
 
 	private static final String TAG = BannerActivity.class.getName();
@@ -75,41 +82,43 @@ public class BannerActivity extends Activity {
 
 		bannerText = (TextView)findViewById(R.id.bannerText);
 		
+		processor = new ItemProcessor<JSONObject>() {
+			@Override
+			public void processItem(JSONObject system, boolean isNew) {
+				showBanner(system);
+			}
+		};
+
 		state = (State)getLastNonConfigurationInstance();
 		if(state == null) {
 			state = new State();
+			
+			state.caller = new CacheSystem(this, processor);
 		}
-		
-		state.caller = BackgroundCaller.run(state.caller, "Getting system", new BackgroundWorker() {
-			@Override
-			public void during() throws Exception {
-				state.system = CacheSystem.getSystem();
-			}
+	}
+	
+	public void onStart() {
+		super.onStart();
 
-			@Override
-			public void after() {
-				showBanner();
-			}
+		state.caller.attach(this, processor);
+	}
+	
+	public void onStop() {
+		super.onStop();
 
-			@Override
-			public Context getContext() {
-				return BannerActivity.this;
-			}
-		});
+		state.caller.detatch();
 	}
 
 	public Object onRetainNonConfigurationInstance() {
-		state.caller.pause();
-		
 		return state;
 	}
 	
-	private void showBanner() {
-		String banner = state.system.optString("banner");
+	private void showBanner(JSONObject system) {
+		String banner = system.optString("banner");
 		if(banner != null) {
 			int hash = banner.hashCode();
 			if(hash != getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0)) {
-				bannerText.setText(state.system.optString("banner", ""));
+				bannerText.setText(system.optString("banner", ""));
 
 				SharedPreferences settings = getPreferences(MODE_PRIVATE);
 				SharedPreferences.Editor editor = settings.edit();

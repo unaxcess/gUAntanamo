@@ -10,22 +10,17 @@ import android.widget.TextView;
 
 public class SettingsActivity extends Activity {
 
-	private String url;
-	private String username;
-	private String password;
-
+	private static class State {
+		String url;
+		String username;
+		String password;
+	}
+	
+	private State state;
+	
 	TextView urlText;
 	TextView usernameText;
 	TextView passwordText;
-
-	public Object onRetainNonConfigurationInstance() {
-		// If the screen orientation, availability of keyboard, etc
-		// changes, Android will kill and restart the Activity. This
-		// stores its data so we can reuse it when the Activity
-		// restarts
-
-		return this;
-	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -33,25 +28,23 @@ public class SettingsActivity extends Activity {
 
 		setContentView(R.layout.settings);
 
-		String url = GUAntanamo.getUrl();
-		String username = GUAntanamo.getUsername();
-		String password = GUAntanamo.getPassword();
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
 
-		SettingsActivity retainedData = (SettingsActivity)getLastNonConfigurationInstance();
-		if(retainedData != null) {
-			url = retainedData.url;
-			username = retainedData.username;
-			password = retainedData.password;
+			state.url = GUAntanamo.getUrl();
+			state.username = GUAntanamo.getUsername();
+			state.password = GUAntanamo.getPassword();
 		}
 
 		urlText = (TextView)findViewById(R.id.settingsUrlText);
-		urlText.setText(url);
+		urlText.setText(state.url);
 
 		usernameText = (TextView)findViewById(R.id.settingsUsernameText);
-		usernameText.setText(username);
+		usernameText.setText(state.username);
 
 		passwordText = (TextView)findViewById(R.id.settingsPasswordText);
-		passwordText.setText(password);
+		passwordText.setText(state.password);
 
 		Button saveButton = (Button)findViewById(R.id.saveButton);
 		saveButton.setOnClickListener(new View.OnClickListener() {
@@ -65,5 +58,9 @@ public class SettingsActivity extends Activity {
 				finish();
 			}
 		});
+	}
+
+	public Object onRetainNonConfigurationInstance() {
+		return state;
 	}
 }

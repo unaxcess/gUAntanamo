@@ -11,6 +11,8 @@ import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONItem;
 import org.ua2.json.JSONWrapper;
 
+import android.content.Context;
+
 /**
  * Reusable cache for folders as it's useful to several classes
  * 
@@ -18,9 +20,13 @@ import org.ua2.json.JSONWrapper;
  * 
  */
 public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
+	public CacheFolders(Context context, ItemProcessor<Collection<JSONFolder>> processor) {
+		super(context, processor);
+	}
+
 	@Override
 	protected String getType() {
-		return "message";
+		return "folders";
 	}
 
 	@Override
@@ -54,5 +60,9 @@ public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
 	@Override
 	protected String convertItemToData(Collection<JSONFolder> folders) {
 		return JSONItem.collectionToString(folders);
+	}
+	
+	public void load(final boolean refresh) {
+		super.load(null, refresh);
 	}
 }

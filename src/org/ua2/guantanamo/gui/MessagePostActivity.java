@@ -6,7 +6,6 @@ import java.util.List;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
-import org.ua2.json.JSONFolder;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,8 +34,6 @@ public class MessagePostActivity extends Activity {
 		String to;
 		String subject;
 		String body;
-		
-		BackgroundCaller caller;
 	}
 	
 	private State state;
@@ -73,9 +70,7 @@ public class MessagePostActivity extends Activity {
 		if(state.quickMode) {
 			names.add(state.folder);
 		} else {
-			for(JSONFolder folder : GUAntanamoMessaging.getFolderList(false)) {
-				names.add(folder.getName());
-			}
+			names.addAll(GUAntanamoMessaging.getFolderNames());
 		}
 
 		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names);
@@ -122,10 +117,8 @@ public class MessagePostActivity extends Activity {
 			findViewById(R.id.postSubject).setVisibility(View.GONE);
 		}
 	}
-
+	
 	public Object onRetainNonConfigurationInstance() {
-		state.caller.pause();
-		
 		return state;
 	}
 

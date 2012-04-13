@@ -8,10 +8,11 @@ import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoClient;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
+import org.ua2.guantanamo.data.CacheFolders;
+import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
 import org.ua2.json.JSONFolder;
 
 import android.app.ListActivity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -45,43 +46,78 @@ public class MainActivity extends ListActivity {
 			return string;
 		}
 	}
+	
+	private ItemProcessor<Collection<JSONFolder>> processor;
 
 	private static class State {
-		Collection<JSONFolder> folders;
-		boolean refresh;
-		
-		BackgroundCaller caller;
+		CacheFolders caller;
 	}
 	
 	private State state;
 	
 	private static final String TAG = MainActivity.class.getName();
-	
-	private void showFolders(boolean refresh) {
-		showFolders(refresh, true);
-	}
-	
-	private void showFolders(boolean refresh, boolean newCaller) {
-		state.refresh = refresh;
-		if(newCaller) {
-			state.caller = null;
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		try {
+			PackageInfo info = getPackageManager().getPackageInfo(getClass().getPackage().getName(), 0);
+			GUAntanamoClient.setVersion(info.versionName);
+		} catch(NameNotFoundException e) {
+			GUAntanamo.handleException(this, "Cannot get package info", e);
 		}
-		
-		state.caller = BackgroundCaller.run(state.caller, "Getting folders", new BackgroundWorker() {
+
+		setContentView(R.layout.main);
+
+		processor = new ItemProcessor<Collection<JSONFolder>>() {
 			@Override
-			public void during() throws Exception {
-				state.folders = GUAntanamoMessaging.getFolderList(state.refresh);
-			}
-			
-			public void after() {
+			public void processItem(Collection<JSONFolder> folders, boolean isNew) {
+				if(isNew) {
+					GUAntanamoMessaging.setFolders(folders);
+				}
+				
 				showFolders();
 			}
+		};
+		
+		state = (State)getLastNonConfigurationInstance();
+		if(state == null) {
+			state = new State();
+			
+			GUAntanamo.setUrl(getPreferences(MODE_PRIVATE).getString("url", "http://ua2.org/uaJSON"));
+			GUAntanamo.setUsername(getPreferences(MODE_PRIVATE).getString("username", ""));
+			GUAntanamo.setPassword(getPreferences(MODE_PRIVATE).getString("password", ""));
 
-			@Override
-			public Context getContext() {
-				return MainActivity.this;
+			if(!"".equals(GUAntanamo.getUrl()) && !"".equals(GUAntanamo.getUsername()) && !"".equals(GUAntanamo.getPassword())) {
+				showBanner();
+			} else {
+				Intent intent = new Intent(this, SettingsActivity.class);
+				startActivityForResult(intent, ACTIVITY_SETTINGS);
 			}
-		});
+
+			state.caller = new CacheFolders(this, processor);
+		}
+	}
+
+	public void onStart() {
+		super.onStart();
+
+		state.caller.attach(this, processor);
+	}
+	
+	public void onStop() {
+		super.onStop();
+
+		state.caller.detatch();
+	}
+
+	public Object onRetainNonConfigurationInstance() {
+		return state;
+	}
+	
+	private void showFolders(boolean refresh) {
+		state.caller.load(refresh);
 	}
 	
 	private void showFolders() {
@@ -89,7 +125,7 @@ public class MainActivity extends ListActivity {
 		
 		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
 
-		for(JSONFolder folder : state.folders) {
+		for(JSONFolder folder : GUAntanamoMessaging.getFolders()) {
 			String string = folder.getName();
 			boolean subscribed = folder.getSubscribed();
 			int unread = 0;
@@ -123,44 +159,6 @@ public class MainActivity extends ListActivity {
 			Log.d(TAG, "Setting folder selection to top");
 			getListView().setSelection(0);
 		}
-	}
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		try {
-			PackageInfo info = getPackageManager().getPackageInfo(getClass().getPackage().getName(), 0);
-			GUAntanamoClient.setVersion(info.versionName);
-		} catch(NameNotFoundException e) {
-			GUAntanamo.handleException(this, "Cannot get package info", e);
-		}
-
-		setContentView(R.layout.main);
-
-		state = (State)getLastNonConfigurationInstance();
-		if(state == null) {
-			state = new State();
-
-			GUAntanamo.setUrl(getPreferences(MODE_PRIVATE).getString("url", "http://ua2.org/uaJSON"));
-			GUAntanamo.setUsername(getPreferences(MODE_PRIVATE).getString("username", ""));
-			GUAntanamo.setPassword(getPreferences(MODE_PRIVATE).getString("password", ""));
-
-			if(!"".equals(GUAntanamo.getUrl()) && !"".equals(GUAntanamo.getUsername()) && !"".equals(GUAntanamo.getPassword())) {
-				showBanner();
-			} else {
-				Intent intent = new Intent(this, SettingsActivity.class);
-				startActivityForResult(intent, ACTIVITY_SETTINGS);
-			}
-		} else {
-			showFolders(false);
-		}
-	}
-
-	public Object onRetainNonConfigurationInstance() {
-		state.caller.pause();
-		
-		return state;
 	}
 
 	@Override
@@ -212,7 +210,7 @@ public class MainActivity extends ListActivity {
 
 	private void setFoldersView(ViewMode viewMode) {
 		GUAntanamo.setViewMode(viewMode, true);
-		showFolders(true);
+		showFolders(false);
 	}
 
 	@Override

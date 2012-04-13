@@ -13,7 +13,15 @@ import org.ua2.json.JSONItem;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
+import android.content.Context;
+
 public class CacheMessages extends CacheTask<List<JSONMessage>> {
+	public CacheMessages(Context context, ItemProcessor<List<JSONMessage>> processor, String folderName) {
+		super(context, processor);
+		
+		load(folderName, false);
+	}
+
 	@Override
 	protected String getType() {
 		return "messages";
