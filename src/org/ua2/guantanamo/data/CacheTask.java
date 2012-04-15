@@ -64,10 +64,10 @@ public abstract class CacheTask<T> {
 	
 	private String getName() {
 		if(context != null) {
-			return context.getClass().getName() + ":" + getType();
+			return getClass().getName() + ":" + context.getClass().getName() + ":" + getType();
 		}
 		
-		return getType();
+		return getClass().getName() + ":" + getType();
 	}
 	
 	private void setContext(Context context, ItemProcessor<T> processor) {
@@ -112,7 +112,7 @@ public abstract class CacheTask<T> {
 		dialog = null;
 	}
 	
-	private void doReady() {
+	protected void doReady() {
 		boolean isNew = value.isNew;
 		
 		if(value.isNew) {
@@ -195,12 +195,12 @@ public abstract class CacheTask<T> {
 		AsyncTask<Object, Object, Object> task = new AsyncTask<Object, Object, Object>() {
 			@Override
 			protected Object doInBackground(Object... params) {
-				if(value.lastUpdate == null
-						|| (getRefreshMinutes() != -1 && value.lastUpdate.getTime() < System.currentTimeMillis() - 60000 * getRefreshMinutes())
-						|| value.data == null) {
-					
-					if(isLoadable()) {
-						try {
+				try {
+					if(value.lastUpdate == null
+							|| (getRefreshMinutes() != -1 && value.lastUpdate.getTime() < System.currentTimeMillis() - 60000 * getRefreshMinutes())
+							|| value.data == null) {
+						
+						if(isLoadable()) {
 							Log.d(TAG, "Loading " + value.id);
 							long loadStart = System.currentTimeMillis();
 							value.item = loadItem(value.id);
@@ -214,30 +214,21 @@ public abstract class CacheTask<T> {
 							value.lastUpdate = new Date();
 							
 							value.isNew = true;
-						} catch(JSONException e) {
-							Log.e(TAG, getName() + " failed", e);
-							
-							error = e;
-							state = State.ERROR;
-							
-							return null;
+						} else {
+							// TODO: Can't get the value
 						}
-					} else {
-						// TODO: Can't get the value
 					}
-				}
-				
-				if(value.item == null) {
-					try {
+					
+					if(value.item == null) {
 						value.item = convertDataToItem(value.data);
-					} catch(JSONException e) {
-						Log.e(TAG, getName() + " failed", e);
-						
-						error = e;
-						state = State.ERROR;
-						
-						return null;
 					}
+				} catch(Exception e) {
+					Log.e(TAG, getName() + " failed", e);
+					
+					error = e;
+					state = State.ERROR;
+					
+					return null;
 				}
 				
 				state = State.READY;
