@@ -122,12 +122,13 @@ public class FolderActivity extends ListActivity {
 			state = new State();
 			
 			state.folderName = getIntent().getStringExtra("folder");
-			state.caller = new CacheMessages(this, processor, state.folderName);
+			state.caller = new CacheMessages();
+			state.caller.load(this, processor, state.folderName, false);
 		}
 	}
 
-	public void onStart() {
-		super.onStart();
+	public void onResume() {
+		super.onResume();
 
 		state.caller.attach(this, processor);
 	}
@@ -150,7 +151,7 @@ public class FolderActivity extends ListActivity {
 			return;
 		}
 		
-		state.caller.load(folder.getName(), refresh);
+		state.caller.load(this, processor, folder.getName(), refresh);
 	}
 
 	private void showFolder() {

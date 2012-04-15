@@ -16,12 +16,6 @@ import org.ua2.json.JSONWrapper;
 import android.content.Context;
 
 public class CacheMessages extends CacheTask<List<JSONMessage>> {
-	public CacheMessages(Context context, ItemProcessor<List<JSONMessage>> processor, String folderName) {
-		super(context, processor);
-		
-		load(folderName, false);
-	}
-
 	@Override
 	protected String getType() {
 		return "messages";
@@ -61,5 +55,9 @@ public class CacheMessages extends CacheTask<List<JSONMessage>> {
 	@Override
 	protected String convertItemToData(List<JSONMessage> messages) {
 		return JSONItem.collectionToString(messages);
+	}
+
+	public void load(Context context, ItemProcessor<List<JSONMessage>> processor, final String id, final boolean forceRefresh) {
+		super._load(context, processor, id, forceRefresh);
 	}
 }

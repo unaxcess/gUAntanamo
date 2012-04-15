@@ -20,10 +20,6 @@ import android.content.Context;
  * 
  */
 public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
-	public CacheFolders(Context context, ItemProcessor<Collection<JSONFolder>> processor) {
-		super(context, processor);
-	}
-
 	@Override
 	protected String getType() {
 		return "folders";
@@ -62,7 +58,7 @@ public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
 		return JSONItem.collectionToString(folders);
 	}
 	
-	public void load(final boolean refresh) {
-		super.load(null, refresh);
+	public void load(Context context, ItemProcessor<Collection<JSONFolder>> processor, boolean refresh) {
+		super._load(context, processor, null, refresh);
 	}
 }

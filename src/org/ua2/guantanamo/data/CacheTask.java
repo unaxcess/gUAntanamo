@@ -58,10 +58,8 @@ public abstract class CacheTask<T> {
 	private CacheValue<T> value;
 	private Exception error;
 	
-	public CacheTask(Context context, ItemProcessor<T> processor) {
+	public CacheTask() {
 		Log.i(TAG, "Creating task " + getName());
-		
-		setContext(context, processor);
 	}
 	
 	private String getName() {
@@ -91,7 +89,7 @@ public abstract class CacheTask<T> {
 	
 	private void showLoader() {
 		if(dialog != null) {
-			Log.i(TAG, "Not showing loader", new Throwable());
+			Log.d(TAG, "Not showing loader", new Throwable());
 			return;
 		}
 		
@@ -156,8 +154,10 @@ public abstract class CacheTask<T> {
 		}
 	}
 	
-	public void load(final String id, final boolean refresh) {
+	protected void _load(Context context, ItemProcessor<T> processor, final String id, final boolean forceRefresh) {
 		synchronized(this) {
+			setContext(context, processor);
+			
 			if(state == State.LOADING) {
 				return;
 			}
@@ -183,7 +183,7 @@ public abstract class CacheTask<T> {
 				cacheMap.put(key, value);
 			}
 			
-			if(refresh) {
+			if(forceRefresh) {
 				value.lastUpdate = null;
 				value.data = null;
 				value.item = null;
@@ -248,7 +248,7 @@ public abstract class CacheTask<T> {
 			@Override
 			protected void onPostExecute(Object result) {
 				synchronized(CacheTask.this) {
-					if(context == null) {
+					if(CacheTask.this.context == null) {
 						state = State.READY;
 						
 						return;

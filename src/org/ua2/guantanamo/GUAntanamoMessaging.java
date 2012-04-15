@@ -50,6 +50,7 @@ public class GUAntanamoMessaging {
 	private static MessagingFolder currentFolder = null;
 	private static int threadInFolder = 0;
 	private static int messageInThread = 0;
+	private static JSONMessage currentMessage = null;
 
 	private static Set<Integer> markedMessageIds = new HashSet<Integer>();
 
@@ -95,7 +96,7 @@ public class GUAntanamoMessaging {
 	}
 	
 	public static JSONFolder setCurrentFolder(NavType direction) {
-		Log.d(TAG, "Data state currentFolder=" + (currentFolder != null));
+		Log.d(TAG, "Resetting current folder using nav type " + direction);
 		if(currentFolder == null) {
 			return null;
 			
@@ -143,7 +144,21 @@ public class GUAntanamoMessaging {
 		return folderList.get(index);
 	}
 	
-	public synchronized static void setFolders(Collection<JSONFolder> folders) {
+	private static MessagingFolder getMessagingFolder(JSONFolder item) {
+		MessagingFolder folder = folderMap.get(item.getName().toLowerCase());
+		if(folder == null) {
+			folder = new MessagingFolder(item);
+			folderMap.put(item.getName().toLowerCase(), folder);
+		}
+		
+		return folder;
+	}
+	
+	public synchronized static void setFolders(Collection<JSONFolder> folders, boolean isNew) {
+		if(folderList.size() != 0 && !isNew) {
+			return;
+		}
+		
 		Log.i(TAG, "Setting folders");
 		
 		folderList.clear();
@@ -151,11 +166,7 @@ public class GUAntanamoMessaging {
 		for(JSONFolder item : folders) {
 			folderList.add(item);
 			
-			MessagingFolder folder = folderMap.get(item.getName().toLowerCase());
-			if(folder == null) {
-				folder = new MessagingFolder(item);
-			}
-			folderMap.put(item.getName().toLowerCase(), folder);
+			getMessagingFolder(item);
 		}
 		
 		Collections.sort(folderList, new Comparator<JSONFolder>() {
@@ -167,9 +178,12 @@ public class GUAntanamoMessaging {
 	}
 	
 	public static List<MessagingThread> getCurrentThreads() {
+		if(currentFolder == null) {
+			Log.e(TAG, "Current folder is null, this is likely to end badly", new Throwable());
+		}
 		return currentFolder.threads;
 	}
-
+	
 	/**
 	 * Turn the flat message list into a list of lists.
 	 * The outer list is sorted according to user preference,
@@ -187,6 +201,10 @@ public class GUAntanamoMessaging {
 		int unread = 0;
 		
 		currentFolder = folderMap.get(name.toLowerCase());
+		if(currentFolder == null) {
+			JSONFolder folder = new JSONFolder(name);
+			currentFolder = getMessagingFolder(folder);
+		}
 		
 		// First group them into threads
 		Map<Integer, MessagingThread> threads = new TreeMap<Integer, MessagingThread>();
@@ -234,11 +252,11 @@ public class GUAntanamoMessaging {
 	}
 	
 	public static JSONMessage getCurrentMessage() {
-		return currentFolder.threads.get(threadInFolder).messages.get(messageInThread);
-	}
-
-	public static int getCurrentThreadId() {
-		return currentFolder.threads.get(threadInFolder).threadId;
+		if(currentMessage == null) {
+			Log.e(TAG, "Current message is null, this is likely to end badly", new Throwable());
+			return null;
+		}
+		return currentMessage;
 	}
 
 	/**
@@ -251,6 +269,10 @@ public class GUAntanamoMessaging {
 	 * @return
 	 */
 	public static JSONMessage getMessage(NavType direction) {
+		if(currentFolder == null) {
+			return null;
+		}
+		
 		int threadIndex = threadInFolder;
 		int messageIndex = messageInThread;
 
@@ -316,6 +338,12 @@ public class GUAntanamoMessaging {
 	public static JSONMessage setCurrentMessage(JSONMessage message) {
 		Log.i(TAG, "Setting current message to " + message.getId());
 		
+		currentMessage = message;
+		
+		if(currentFolder == null) {
+			return message;
+		}
+		
 		int threadIndex = 0;
 		int messageIndex = 0;
 		
@@ -327,8 +355,6 @@ public class GUAntanamoMessaging {
 			
 			if(item.getId() == message.getId()) {
 				Log.i(TAG, "Found message " + message.getId() + " in current folder");
-				
-				thread.messages.set(messageIndex, message);
 				
 				loop = false;
 				threadInFolder = threadIndex;
@@ -342,7 +368,7 @@ public class GUAntanamoMessaging {
 						thread = currentFolder.threads.get(threadIndex);
 					} else {
 						loop = false;
-						Log.i(TAG, "Cannot find message " + message.getId() + " in current folder");
+						Log.w(TAG, "Cannot find message " + message.getId() + " in current folder");
 					}
 				}
 			}
@@ -350,19 +376,35 @@ public class GUAntanamoMessaging {
 		
 		return message;
 	}
+	
+	private static void markMessageReadInThread() {
+		if(currentFolder == null) {
+			return;
+		}
+		
+		for(MessagingThread thread : currentFolder.threads) {
+			for(JSONMessage message : thread.messages) {
+				if(message.getId() == currentMessage.getId()) {
+					message.setRead(true);
+					return;
+				}
+			}
+		}
+	}
 
 	public static void markCurrentMessageRead() throws JSONException {
-		JSONMessage message = currentFolder.threads.get(threadInFolder).messages.get(messageInThread);
-		if(!message.isRead()) {
-			message.setRead(true);
-			markedMessageIds.add(message.getId());
-			JSONFolder folder = getFolder(message.getFolder());
+		if(!currentMessage.isRead()) {
+			currentMessage.setRead(true);
+			markMessageReadInThread();
+			
+			markedMessageIds.add(currentMessage.getId());
+			JSONFolder folder = getFolder(currentMessage.getFolder());
 			if(folder != null) {
 				folder.setUnread(folder.getUnread() - 1);
 			}
 	
 			// TODO: Move to a worker thread or background service
-			GUAntanamo.getClient().markMessage(message.getId(), true);
+			GUAntanamo.getClient().markMessage(currentMessage.getId(), true);
 		}
 	}
 }

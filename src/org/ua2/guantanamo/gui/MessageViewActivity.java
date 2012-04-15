@@ -67,9 +67,7 @@ public class MessageViewActivity extends Activity {
 		processor = new ItemProcessor<JSONMessage>() {
 			@Override
 			public void processItem(JSONMessage message, boolean isNew) {
-				if(isNew) {
-					GUAntanamoMessaging.setCurrentMessage(message);
-				}
+				GUAntanamoMessaging.setCurrentMessage(message);
 				
 				showMessage();
 			}
@@ -81,12 +79,13 @@ public class MessageViewActivity extends Activity {
 			
 			int id = getIntent().getIntExtra("message", 0);
 			
-			state.caller = new CacheMessage(this, processor, id);
+			state.caller = new CacheMessage();
+			state.caller.load(this, processor, id);
 		}
 	}
 	
-	public void onStart() {
-		super.onStart();
+	public void onResume() {
+		super.onResume();
 
 		state.caller.attach(this, processor);
 	}
@@ -115,7 +114,7 @@ public class MessageViewActivity extends Activity {
 		StringBuilder sb = new StringBuilder();
 		sb.append(message.getId()).append(" in ").append(message.getFolder());
 		sb.append(" [");
-		sb.append(message.getPosition()).append(" of ").append(GUAntanamoMessaging.getCurrentFolder().getCount());
+		sb.append(message.getPosition()).append(" of ").append(message.getCount());
 		sb.append(" ").append(GUAntanamo.getViewMode(false).name());
 		sb.append("]");
 	
@@ -130,7 +129,7 @@ public class MessageViewActivity extends Activity {
 			return;
 		}
 		
-		state.caller.load(message.getId(), refresh);
+		state.caller.load(this, processor, message.getId(), refresh);
 	}
 	
 	private void showMessage() {
@@ -309,12 +308,12 @@ public class MessageViewActivity extends Activity {
 
 	private void catchupThread() {
 		final ProgressDialog progress = ProgressDialog.show(this, "", "Catching up thread...", true);
-
+		
 		new AsyncTask<String, Void, String>() {
 			@Override
 			protected String doInBackground(String... params) {
 				try {
-					int id = GUAntanamoMessaging.getCurrentThreadId();
+					int id = GUAntanamoMessaging.getCurrentMessage().getThread();
 
 					Log.i(TAG, "Marking thread " + id);
 					GUAntanamo.getClient().markThread(id, true);

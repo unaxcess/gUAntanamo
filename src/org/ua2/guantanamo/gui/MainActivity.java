@@ -73,9 +73,7 @@ public class MainActivity extends ListActivity {
 		processor = new ItemProcessor<Collection<JSONFolder>>() {
 			@Override
 			public void processItem(Collection<JSONFolder> folders, boolean isNew) {
-				if(isNew) {
-					GUAntanamoMessaging.setFolders(folders);
-				}
+				GUAntanamoMessaging.setFolders(folders, isNew);
 				
 				showFolders();
 			}
@@ -96,12 +94,12 @@ public class MainActivity extends ListActivity {
 				startActivityForResult(intent, ACTIVITY_SETTINGS);
 			}
 
-			state.caller = new CacheFolders(this, processor);
+			state.caller = new CacheFolders();
 		}
 	}
 
-	public void onStart() {
-		super.onStart();
+	public void onResume() {
+		super.onResume();
 
 		state.caller.attach(this, processor);
 	}
@@ -117,7 +115,7 @@ public class MainActivity extends ListActivity {
 	}
 	
 	private void showFolders(boolean refresh) {
-		state.caller.load(refresh);
+		state.caller.load(this, processor, refresh);
 	}
 	
 	private void showFolders() {

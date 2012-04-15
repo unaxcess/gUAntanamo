@@ -22,12 +22,6 @@ public class BannerActivity extends Activity {
 	private static final String PREFERENCE = "bannerHash";
 
 	private static class CacheSystem extends CacheTask<JSONObject> {
-		public CacheSystem(Context context, ItemProcessor<JSONObject> processor) {
-			super(context, processor);
-			
-			load(null, false);
-		}
-
 		@Override
 		protected String getType() {
 			return "system";
@@ -53,9 +47,14 @@ public class BannerActivity extends Activity {
 		protected JSONObject convertDataToItem(String data) throws JSONException {
 			return JSONWrapper.parse(data).getObject();
 		}
+		
+		public void load(Context context, ItemProcessor<JSONObject> processor) {
+			super._load(context, processor, null, false);
+		}
 	};
 	
 	private TextView bannerText;
+	private int bannerHash;
 
 	private ItemProcessor<JSONObject> processor = null;
 
@@ -82,6 +81,8 @@ public class BannerActivity extends Activity {
 
 		bannerText = (TextView)findViewById(R.id.bannerText);
 		
+		bannerHash = getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0);
+		
 		processor = new ItemProcessor<JSONObject>() {
 			@Override
 			public void processItem(JSONObject system, boolean isNew) {
@@ -93,12 +94,13 @@ public class BannerActivity extends Activity {
 		if(state == null) {
 			state = new State();
 			
-			state.caller = new CacheSystem(this, processor);
+			state.caller = new CacheSystem();
+			state.caller.load(this, processor);
 		}
 	}
 	
-	public void onStart() {
-		super.onStart();
+	public void onResume() {
+		super.onResume();
 
 		state.caller.attach(this, processor);
 	}
@@ -117,8 +119,8 @@ public class BannerActivity extends Activity {
 		String banner = system.optString("banner");
 		if(banner != null) {
 			int hash = banner.hashCode();
-			if(hash != getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0)) {
-				bannerText.setText(system.optString("banner", ""));
+			if(hash != bannerHash) {
+				bannerText.setText(banner);
 
 				SharedPreferences settings = getPreferences(MODE_PRIVATE);
 				SharedPreferences.Editor editor = settings.edit();
