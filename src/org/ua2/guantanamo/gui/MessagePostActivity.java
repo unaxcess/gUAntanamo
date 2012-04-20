@@ -6,12 +6,11 @@ import java.util.List;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
+import org.ua2.guantanamo.data.BackgroundTask;
+import org.ua2.json.JSONMessage;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
-import android.content.DialogInterface;
-import android.os.AsyncTask;
+import android.content.Context;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -34,6 +33,35 @@ public class MessagePostActivity extends Activity {
 		String to;
 		String subject;
 		String body;
+		
+		MessagePoster caller;
+	}
+	
+	private static class MessagePoster extends BackgroundTask<JSONMessage> {
+		private State state;
+		
+		public MessagePoster(State state) {
+			this.state = state;
+		}
+		
+		@Override
+		protected String getDescription() {
+			return "Posting message";
+		}
+
+		@Override
+		protected JSONMessage loadItem() throws JSONException {
+			Log.i(TAG, "Posting message to " + state.replyId + " / " + state.folder + ", " + state.to + " " + state.subject + " " + state.body);
+			return GUAntanamo.getClient().postMessage(state.replyId, state.folder, state.to, state.subject, state.body);
+		}
+
+		public void load(Context context) {
+			super._load(context);
+		}
+
+		@Override
+		protected void doReady() {
+		}
 	}
 	
 	private State state;
@@ -61,6 +89,8 @@ public class MessagePostActivity extends Activity {
 			state.to = getIntent().getStringExtra("to");
 			state.subject = getIntent().getStringExtra("subject");
 			state.body = getIntent().getStringExtra("body");
+			
+			state.caller = new MessagePoster(state);
 		}
 		
 		folderList = (Spinner)findViewById(R.id.postFolderList);
@@ -118,6 +148,20 @@ public class MessagePostActivity extends Activity {
 		}
 	}
 	
+	public void onResume() {
+		super.onResume();
+
+		state.caller.attach(this);
+	}
+	
+	public void onStop() {
+		super.onStop();
+
+		state.caller.detatch();
+		
+		setResult(RESULT_OK);
+	}
+
 	public Object onRetainNonConfigurationInstance() {
 		return state;
 	}
@@ -146,44 +190,12 @@ public class MessagePostActivity extends Activity {
 	}
 
 	private void postMessage() {
-		final ProgressDialog progress = ProgressDialog.show(this, "", "Posting message", true);
-
-		new AsyncTask<String, Void, String>() {
-			@Override
-			protected String doInBackground(String... params) {
-				try {
-					String folder = (String)folderList.getSelectedItem();
-					String to = toText.getText().toString();
-					String subject = subjectText.getText().toString();
-					String body = bodyText.getText().toString();
-
-					Log.i(TAG, "Posting message to " + state.replyId + " / " + folder + ", " + to + " " + subject + " " + body);
-					GUAntanamo.getClient().postMessage(state.replyId, folder, to, subject, body);
-
-					return null;
-				} catch(JSONException e) {
-					return e.getMessage();
-				}
-			}
-
-			protected void onPostExecute(String error) {
-				progress.dismiss();
-
-				if(error == null) {
-					setResult(RESULT_OK);
-					finish();
-				} else {
-					AlertDialog.Builder builder = new AlertDialog.Builder(MessagePostActivity.this);
-					builder.setMessage("Unable to post message, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int id) {
-							dialog.cancel();
-						}
-					});
-					AlertDialog dialog = builder.create();
-					dialog.show();
-				}
-			}
-		}.execute();
+		state.folder = (String)folderList.getSelectedItem();
+		state.to = toText.getText().toString();
+		state.subject = subjectText.getText().toString();
+		state.body = bodyText.getText().toString();
+		
+		state.caller.load(this);
 	}
 
 }

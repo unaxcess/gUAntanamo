@@ -16,7 +16,7 @@ public abstract class BackgroundTask<T> {
 	
 	protected abstract String getDescription();
 	
-	protected abstract T load() throws JSONException;
+	protected abstract T loadItem() throws JSONException;
 
 	private static final String TAG = BackgroundTask.class.getName();
 	
@@ -78,9 +78,7 @@ public abstract class BackgroundTask<T> {
 		dialog = null;
 	}
 	
-	protected void doReady() {
-		
-	}
+	protected abstract void doReady();
 	
 	private void doError() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -131,7 +129,7 @@ public abstract class BackgroundTask<T> {
 				try {
 					Log.d(TAG, "Loading");
 					long loadStart = System.currentTimeMillis();
-					load();
+					loadItem();
 					Log.d(TAG, "Loaded " + " on " + getName() + " in " + (System.currentTimeMillis() - loadStart) + " ms");
 				} catch(Exception e) {
 					Log.e(TAG, getName() + " failed", e);
