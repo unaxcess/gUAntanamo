@@ -34,29 +34,42 @@ public class MessagePostActivity extends Activity {
 		String subject;
 		String body;
 		
-		MessagePoster caller;
+		String replyBody;
+		
+		MessagePoster post;
 	}
 	
 	private static class MessagePoster extends BackgroundTask<JSONMessage> {
-		private State state;
-		
-		public MessagePoster(State state) {
-			this.state = state;
-		}
+		private int replyId;
+		private String folder;
+		private String to;
+		private String subject;
+		private String body;
 		
 		@Override
-		protected String getDescription() {
+		protected String getRunningMessage() {
 			return "Posting message";
 		}
 
 		@Override
-		protected JSONMessage loadItem() throws JSONException {
-			Log.i(TAG, "Posting message to " + state.replyId + " / " + state.folder + ", " + state.to + " " + state.subject + " " + state.body);
-			return GUAntanamo.getClient().postMessage(state.replyId, state.folder, state.to, state.subject, state.body);
+		protected String getErrorMessage() {
+			return "Cannot post message";
 		}
 
-		public void load(Context context) {
-			super._load(context);
+		@Override
+		protected JSONMessage runItem() throws JSONException {
+			Log.i(TAG, "Posting message to " + replyId + " / " + folder + ", " + to + " " + subject + " " + body);
+			return GUAntanamo.getClient().postMessage(replyId, folder, to, subject, body);
+		}
+
+		public void load(Context context, int replyId, String folder, String to, String subject, String body) {
+			this.replyId = replyId;
+			this.folder = folder;
+			this.to = to;
+			this.subject = subject;
+			this.body = body;
+
+			super._run(context);
 		}
 
 		@Override
@@ -88,9 +101,11 @@ public class MessagePostActivity extends Activity {
 			state.folder = getIntent().getStringExtra("folder");
 			state.to = getIntent().getStringExtra("to");
 			state.subject = getIntent().getStringExtra("subject");
-			state.body = getIntent().getStringExtra("body");
+			state.body = "";
 			
-			state.caller = new MessagePoster(state);
+			state.replyBody = getIntent().getStringExtra("body");
+			
+			state.post = new MessagePoster();
 		}
 		
 		folderList = (Spinner)findViewById(R.id.postFolderList);
@@ -151,13 +166,13 @@ public class MessagePostActivity extends Activity {
 	public void onResume() {
 		super.onResume();
 
-		state.caller.attach(this);
+		state.post.attach(this);
 	}
 	
 	public void onStop() {
 		super.onStop();
 
-		state.caller.detatch();
+		state.post.detatch();
 		
 		setResult(RESULT_OK);
 	}
@@ -181,6 +196,7 @@ public class MessagePostActivity extends Activity {
 			
 		} else if(item.getItemId() == R.id.postQuote) {
 			// TODO: Format original body with chevrons
+			bodyText.setText(bodyText.getText() + "\n\n>" + state.replyBody);
 
 		} else {
 			return super.onContextItemSelected(item);
@@ -190,12 +206,12 @@ public class MessagePostActivity extends Activity {
 	}
 
 	private void postMessage() {
-		state.folder = (String)folderList.getSelectedItem();
-		state.to = toText.getText().toString();
-		state.subject = subjectText.getText().toString();
-		state.body = bodyText.getText().toString();
-		
-		state.caller.load(this);
+		state.post.load(this,
+			state.replyId,
+			(String)folderList.getSelectedItem(),
+			toText.getText().toString(),
+			subjectText.getText().toString(),
+			bodyText.getText().toString());
 	}
 
 }

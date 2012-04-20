@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/send" android:id="@+id/postSend"></item>
-    <item android:title="Quote" android:id="@+id/postQuote"></item>
+    <item android:title="@string/send" android:id="@+id/postSend" android:icon="@drawable/ic_menu_wizard" />
+    <item android:title="Quote" android:id="@+id/postQuote" />
 </menu>

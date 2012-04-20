@@ -5,19 +5,18 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
+import org.ua2.guantanamo.data.BackgroundTask;
 import org.ua2.guantanamo.data.CacheMessage;
 import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
 import org.ua2.json.JSONMessage;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
@@ -41,6 +40,9 @@ public class MessageViewActivity extends Activity {
 
 	private static class State {
 		CacheMessage caller;
+		
+		MessageCatchup catchup;
+		MessageSave save;
 	}
 	
 	private State state;
@@ -81,6 +83,9 @@ public class MessageViewActivity extends Activity {
 			
 			state.caller = new CacheMessage();
 			state.caller.load(this, processor, id);
+
+			state.catchup = new MessageCatchup();
+			state.save = new MessageSave();
 		}
 	}
 	
@@ -88,12 +93,16 @@ public class MessageViewActivity extends Activity {
 		super.onResume();
 
 		state.caller.attach(this, processor);
+		state.catchup.attach(this);
+		state.save.attach(this);
 	}
 	
 	public void onStop() {
 		super.onStop();
 
 		state.caller.detatch();
+		state.caller.detatch();
+		state.save.detatch();
 		
 		setResult(RESULT_OK);
 	}
@@ -269,78 +278,71 @@ public class MessageViewActivity extends Activity {
 	}
 
 	private void holdMessage() {
-		final ProgressDialog progress = ProgressDialog.show(this, "", "Holding message...", true);
+		state.save.run(this, GUAntanamoMessaging.getCurrentMessage().getId());
+	}
+	
+	private static class MessageSave extends BackgroundTask<JSONObject> {
+		private int id;
+		
+		@Override
+		protected String getRunningMessage() {
+			return "Saving message";
+		}
 
-		new AsyncTask<String, Void, String>() {
-			@Override
-			protected String doInBackground(String... params) {
-				try {
-					int id = GUAntanamoMessaging.getCurrentMessage().getId();
+		@Override
+		protected String getErrorMessage() {
+			return "Cannot save message";
+		}
 
-					Log.i(TAG, "Saving message " + id);
-					GUAntanamo.getClient().saveMessage(id);
+		@Override
+		protected JSONObject runItem() throws JSONException {
+			Log.i(TAG, "Saving message " + id);
+			return GUAntanamo.getClient().saveMessage(id);
+		}
 
-					return null;
-				} catch(JSONException e) {
-					return e.getMessage();
-				}
-			}
+		@Override
+		protected void doReady() {
+		}
 
-			protected void onPostExecute(String error) {
-				progress.dismiss();
+		public void run(Context context, int id) {
+			this.id = id;
+			
+			super._run(context);
+		}
+	}
+	
+	private static class MessageCatchup extends BackgroundTask<JSONObject> {
+		private int id;
+		
+		@Override
+		protected String getRunningMessage() {
+			return "Catching up";
+		}
 
-				if(error == null) {
-					setResult(RESULT_OK);
-					finish();
-				} else {
-					AlertDialog.Builder builder = new AlertDialog.Builder(MessageViewActivity.this);
-					builder.setMessage("Unable to save message, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int id) {
-							dialog.cancel();
-						}
-					});
-					AlertDialog dialog = builder.create();
-					dialog.show();
-				}
-			}
-		}.execute();
+		@Override
+		protected String getErrorMessage() {
+			return "Cannot catch up";
+		}
+
+		@Override
+		protected JSONObject runItem() throws JSONException {
+			Log.i(TAG, "Marking thread " + id);
+			return GUAntanamo.getClient().markThread(id, true);
+		}
+
+		@Override
+		protected void doReady() {
+			GUAntanamoMessaging.markThreadRead(id);
+		}
+
+		public void run(Context context, int id) {
+			this.id = id;
+			
+			super._run(context);
+		}
 	}
 
 	private void catchupThread() {
-		final ProgressDialog progress = ProgressDialog.show(this, "", "Catching up thread...", true);
-		
-		new AsyncTask<String, Void, String>() {
-			@Override
-			protected String doInBackground(String... params) {
-				try {
-					int id = GUAntanamoMessaging.getCurrentMessage().getThread();
-
-					Log.i(TAG, "Marking thread " + id);
-					GUAntanamo.getClient().markThread(id, true);
-
-					return null;
-				} catch(JSONException e) {
-					return e.getMessage();
-				}
-			}
-
-			protected void onPostExecute(String error) {
-				progress.dismiss();
-
-				if(error == null) {
-					setResult(RESULT_OK);
-					finish();
-				} else {
-					AlertDialog.Builder builder = new AlertDialog.Builder(MessageViewActivity.this);
-					builder.setMessage("Unable to catch up thread, " + error).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int id) {
-							dialog.cancel();
-						}
-					});
-					AlertDialog dialog = builder.create();
-					dialog.show();
-				}
-			}
-		}.execute();
+		state.catchup.run(this, GUAntanamoMessaging.getCurrentMessage().getThread());
 	}
 }

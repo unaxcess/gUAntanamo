@@ -12,11 +12,12 @@ import android.util.Log;
 
 public abstract class BackgroundTask<T> {
 	
-	private enum State { LOADING, READY, ERROR };
+	private enum State { RUNNING, READY, ERROR };
 	
-	protected abstract String getDescription();
+	protected abstract String getRunningMessage();
+	protected abstract String getErrorMessage();
 	
-	protected abstract T loadItem() throws JSONException;
+	protected abstract T runItem() throws JSONException;
 
 	private static final String TAG = BackgroundTask.class.getName();
 	
@@ -53,27 +54,27 @@ public abstract class BackgroundTask<T> {
 		}
 	}
 	
-	private void showLoader() {
+	private void showRunner() {
 		if(dialog != null) {
-			Log.d(TAG, "Not showing loader", new Throwable());
+			Log.d(TAG, "Not showing runner", new Throwable());
 			return;
 		}
 		
 		if(context == null) {
-			Log.i(TAG, "Can't show loader, no context for " + getName());
+			Log.i(TAG, "Can't show runner, no context for " + getName());
 			return;
 		}
 		
-		Log.i(TAG, "Showing loader for " + getName());
-		dialog = ProgressDialog.show(context, "", "Loading " + getDescription() + "...", true);
+		Log.i(TAG, "Showing runner for " + getName());
+		dialog = ProgressDialog.show(context, "", getRunningMessage() + "...", true);
 	}
 	
-	private void hideLoader() {
+	private void hideRunner() {
 		if(dialog == null) {
 			return;
 		}
 		
-		Log.i(TAG, "Hiding loader for " + getName());
+		Log.i(TAG, "Hiding runner for " + getName());
 		dialog.dismiss();
 		dialog = null;
 	}
@@ -82,9 +83,9 @@ public abstract class BackgroundTask<T> {
 	
 	private void doError() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
-		builder.setMessage("Cannot load " + getDescription() + ", " + error.getMessage()).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		builder.setMessage(getErrorMessage() + ", " + error.getMessage()).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-				hideLoader();
+				hideRunner();
 			}
 		});
 		
@@ -97,8 +98,8 @@ public abstract class BackgroundTask<T> {
 			setContext(context);
 			
 			Log.i(TAG, "Checking state " + state + " of " + getName());
-			if(state == State.LOADING) {
-				showLoader();
+			if(state == State.RUNNING) {
+				showRunner();
 				
 			} else if(state == State.READY) {
 				doReady();
@@ -110,27 +111,27 @@ public abstract class BackgroundTask<T> {
 		}
 	}
 	
-	protected void _load(Context context) {
+	protected void _run(Context context) {
 		synchronized(this) {
 			setContext(context);
 			
-			if(state == State.LOADING) {
+			if(state == State.RUNNING) {
 				return;
 			}
 			
-			state = State.LOADING;
+			state = State.RUNNING;
 		}
 		
-		showLoader();
+		showRunner();
 		
 		AsyncTask<Object, Object, Object> task = new AsyncTask<Object, Object, Object>() {
 			@Override
 			protected Object doInBackground(Object... params) {
 				try {
-					Log.d(TAG, "Loading");
-					long loadStart = System.currentTimeMillis();
-					loadItem();
-					Log.d(TAG, "Loaded " + " on " + getName() + " in " + (System.currentTimeMillis() - loadStart) + " ms");
+					Log.d(TAG, "Running");
+					long runStart = System.currentTimeMillis();
+					runItem();
+					Log.d(TAG, "Ran on " + getName() + " in " + (System.currentTimeMillis() - runStart) + " ms");
 				} catch(Exception e) {
 					Log.e(TAG, getName() + " failed", e);
 					
@@ -155,7 +156,7 @@ public abstract class BackgroundTask<T> {
 					}
 				}
 			
-				hideLoader();
+				hideRunner();
 					
 				if(state == State.READY) {
 					doReady();
@@ -176,7 +177,7 @@ public abstract class BackgroundTask<T> {
 			
 			context = null;
 			
-			hideLoader();
+			hideRunner();
 		}
 	}
 }

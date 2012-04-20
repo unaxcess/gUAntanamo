@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/reply" android:id="@+id/viewReply" android:icon="@drawable/ic_menu_wizard"></item><item android:id="@+id/viewCatchup" android:title="@string/catchup" android:icon="@drawable/ic_menu_tick"></item><item android:id="@+id/viewHold" android:title="@string/hold" android:icon="@drawable/ic_menu_tag"></item><item android:title="@string/post" android:id="@+id/viewPost" android:icon="@drawable/ic_menu_wizard"></item><item android:title="@string/unread" android:id="@+id/viewUnread" android:icon="@drawable/ic_menu_sun"></item>
-    <item android:title="@string/all" android:id="@+id/viewAll" android:icon="@drawable/ic_menu_smalltiles"></item>
-    <item android:title="@string/refresh" android:id="@+id/viewRefresh"></item><item android:id="@+id/viewPage" android:title="@string/page" android:icon="@drawable/ic_menu_dialog"></item>
-    
-    
-    
-    
-    
+    <item android:title="@string/reply" android:id="@+id/viewReply" android:icon="@drawable/ic_menu_wizard" />
+    <item android:id="@+id/viewCatchup" android:title="@string/catchup" android:icon="@drawable/ic_menu_tick" />
+    <item android:id="@+id/viewHold" android:title="@string/hold" android:icon="@drawable/ic_menu_tag" />
+    <item android:title="@string/post" android:id="@+id/viewPost" android:icon="@drawable/ic_menu_wizard" />
+    <item android:title="@string/unread" android:id="@+id/viewUnread" android:icon="@drawable/ic_menu_sun" />
+    <item android:title="@string/all" android:id="@+id/viewAll" android:icon="@drawable/ic_menu_smalltiles" />
+    <item android:title="@string/refresh" android:id="@+id/viewRefresh" />
+    <item android:id="@+id/viewPage" android:title="@string/page" android:icon="@drawable/ic_menu_dialog" />
 </menu>

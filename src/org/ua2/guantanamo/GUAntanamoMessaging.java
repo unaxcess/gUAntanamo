@@ -407,4 +407,19 @@ public class GUAntanamoMessaging {
 			GUAntanamo.getClient().markMessage(currentMessage.getId(), true);
 		}
 	}
+	
+	public static void markThreadRead(int id) {
+		if(currentFolder == null) {
+			return;
+		}
+		
+		for(MessagingThread thread : currentFolder.threads) {
+			if(thread.threadId == id) {
+				for(JSONMessage message : thread.messages) {
+					message.setRead(true);
+					markedMessageIds.add(currentMessage.getId());
+				}
+			}
+		}
+	}
 }

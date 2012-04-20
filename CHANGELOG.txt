@@ -1,0 +1,21 @@
+0.4 (20th April 2012)
+---------------------
+
+- Got catchup working
+- Converted markup / catchup / post functions to use BackgroundTask 
+
+
+0.4 (13th April 2012)
+---------------------
+
+- Fixed some of the remote fetch / rotate crashes
+
+
+0.3 (9th September 2011)
+------------------------
+
+- Added sqlite backend
+- Folder screen organises messages into pseudo-threads, presents the top level
+message of each one in reverse chronological order
+- Removed nav buttons from message view, implemented swipe instead (right ->
+next message, down -> next thread)
