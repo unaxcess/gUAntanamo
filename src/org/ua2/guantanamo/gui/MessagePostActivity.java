@@ -26,6 +26,8 @@ import android.widget.Spinner;
 
 public class MessagePostActivity extends Activity {
 
+	BackgroundTask.Processor<JSONMessage> processor;
+
 	private static class State {
 		boolean quickMode;
 		int replyId;
@@ -62,18 +64,14 @@ public class MessagePostActivity extends Activity {
 			return GUAntanamo.getClient().postMessage(replyId, folder, to, subject, body);
 		}
 
-		public void load(Context context, int replyId, String folder, String to, String subject, String body) {
+		public void load(Context context, BackgroundTask.Processor<JSONMessage> processor, int replyId, String folder, String to, String subject, String body) {
 			this.replyId = replyId;
 			this.folder = folder;
 			this.to = to;
 			this.subject = subject;
 			this.body = body;
 
-			super._run(context);
-		}
-
-		@Override
-		protected void doReady() {
+			super._run(context, processor);
 		}
 	}
 	
@@ -91,6 +89,14 @@ public class MessagePostActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.post);
+		
+		processor = new BackgroundTask.Processor<JSONMessage>() {
+			@Override
+			public void processItem(JSONMessage item) {
+				setResult(RESULT_OK);
+				finish();
+			}
+		};
 
 		state = (State)getLastNonConfigurationInstance();
 		if(state == null) {
@@ -166,7 +172,7 @@ public class MessagePostActivity extends Activity {
 	public void onResume() {
 		super.onResume();
 
-		state.post.attach(this);
+		state.post.attach(this, processor);
 	}
 	
 	public void onStop() {
@@ -206,12 +212,13 @@ public class MessagePostActivity extends Activity {
 	}
 
 	private void postMessage() {
-		state.post.load(this,
+		state.post.load(
+			this,
+			processor,
 			state.replyId,
 			(String)folderList.getSelectedItem(),
 			toText.getText().toString(),
 			subjectText.getText().toString(),
 			bodyText.getText().toString());
 	}
-
 }

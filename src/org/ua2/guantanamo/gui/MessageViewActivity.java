@@ -11,7 +11,7 @@ import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
 import org.ua2.guantanamo.data.BackgroundTask;
 import org.ua2.guantanamo.data.CacheMessage;
-import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
+import org.ua2.guantanamo.data.CacheTask;
 import org.ua2.json.JSONMessage;
 
 import android.app.Activity;
@@ -36,7 +36,9 @@ public class MessageViewActivity extends Activity {
 
 	private GestureDetector detector;
 	
-	private ItemProcessor<JSONMessage> processor;
+	private CacheTask.Processor<JSONMessage> viewProcessor;
+	private BackgroundTask.Processor<JSONObject> saveProcessor;
+	private BackgroundTask.Processor<JSONObject> catchupProcessor;
 
 	private static class State {
 		CacheMessage caller;
@@ -66,12 +68,28 @@ public class MessageViewActivity extends Activity {
 		TextView bodyText = (TextView)findViewById(R.id.viewBodyText);
 		bodyText.setMovementMethod(new ScrollingMovementMethod());
 		
-		processor = new ItemProcessor<JSONMessage>() {
+		viewProcessor = new CacheTask.Processor<JSONMessage>() {
 			@Override
 			public void processItem(JSONMessage message, boolean isNew) {
 				GUAntanamoMessaging.setCurrentMessage(message);
 				
 				showMessage();
+			}
+		};
+		
+		saveProcessor = new BackgroundTask.Processor<JSONObject>() {
+			@Override
+			public void processItem(JSONObject item) {
+				setResult(RESULT_OK);
+				finish();
+			}
+		};
+		
+		catchupProcessor = new BackgroundTask.Processor<JSONObject>() {
+			@Override
+			public void processItem(JSONObject item) {
+				setResult(RESULT_OK);
+				finish();
 			}
 		};
 
@@ -82,7 +100,7 @@ public class MessageViewActivity extends Activity {
 			int id = getIntent().getIntExtra("message", 0);
 			
 			state.caller = new CacheMessage();
-			state.caller.load(this, processor, id);
+			state.caller.load(this, viewProcessor, id);
 
 			state.catchup = new MessageCatchup();
 			state.save = new MessageSave();
@@ -92,9 +110,9 @@ public class MessageViewActivity extends Activity {
 	public void onResume() {
 		super.onResume();
 
-		state.caller.attach(this, processor);
-		state.catchup.attach(this);
-		state.save.attach(this);
+		state.caller.attach(this, viewProcessor);
+		state.save.attach(this, saveProcessor);
+		state.catchup.attach(this, catchupProcessor);
 	}
 	
 	public void onStop() {
@@ -138,7 +156,7 @@ public class MessageViewActivity extends Activity {
 			return;
 		}
 		
-		state.caller.load(this, processor, message.getId(), refresh);
+		state.caller.load(this, viewProcessor, message.getId(), refresh);
 	}
 	
 	private void showMessage() {
@@ -278,7 +296,7 @@ public class MessageViewActivity extends Activity {
 	}
 
 	private void holdMessage() {
-		state.save.run(this, GUAntanamoMessaging.getCurrentMessage().getId());
+		state.save.run(this, saveProcessor, GUAntanamoMessaging.getCurrentMessage().getId());
 	}
 	
 	private static class MessageSave extends BackgroundTask<JSONObject> {
@@ -300,14 +318,10 @@ public class MessageViewActivity extends Activity {
 			return GUAntanamo.getClient().saveMessage(id);
 		}
 
-		@Override
-		protected void doReady() {
-		}
-
-		public void run(Context context, int id) {
+		public void run(Context context, BackgroundTask.Processor<JSONObject> processor, int id) {
 			this.id = id;
 			
-			super._run(context);
+			super._run(context, processor);
 		}
 	}
 	
@@ -327,22 +341,19 @@ public class MessageViewActivity extends Activity {
 		@Override
 		protected JSONObject runItem() throws JSONException {
 			Log.i(TAG, "Marking thread " + id);
-			return GUAntanamo.getClient().markThread(id, true);
-		}
-
-		@Override
-		protected void doReady() {
+			JSONObject response = GUAntanamo.getClient().markThread(id, true);
 			GUAntanamoMessaging.markThreadRead(id);
+			return response;
 		}
 
-		public void run(Context context, int id) {
+		public void run(Context context, BackgroundTask.Processor<JSONObject> processor, int id) {
 			this.id = id;
 			
-			super._run(context);
+			super._run(context, processor);
 		}
 	}
 
 	private void catchupThread() {
-		state.catchup.run(this, GUAntanamoMessaging.getCurrentMessage().getThread());
+		state.catchup.run(this, catchupProcessor, GUAntanamoMessaging.getCurrentMessage().getThread());
 	}
 }

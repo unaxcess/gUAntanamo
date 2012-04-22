@@ -57,7 +57,7 @@ public class CacheMessages extends CacheTask<List<JSONMessage>> {
 		return JSONItem.collectionToString(messages);
 	}
 
-	public void load(Context context, ItemProcessor<List<JSONMessage>> processor, final String id, final boolean forceRefresh) {
+	public void load(Context context, Processor<List<JSONMessage>> processor, final String id, final boolean forceRefresh) {
 		super._load(context, processor, id, forceRefresh);
 	}
 }

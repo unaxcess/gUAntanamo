@@ -11,7 +11,7 @@ import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.GUAntanamoMessaging.MessagingThread;
 import org.ua2.guantanamo.ViewMode;
 import org.ua2.guantanamo.data.CacheMessages;
-import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
+import org.ua2.guantanamo.data.CacheTask.Processor;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
 
@@ -63,7 +63,7 @@ public class FolderActivity extends ListActivity {
 		}
 	}
 	
-	private ItemProcessor<List<JSONMessage>> processor;
+	private Processor<List<JSONMessage>> processor;
 
 	private static class State {
 		String folderName;
@@ -109,7 +109,7 @@ public class FolderActivity extends ListActivity {
 		threeDays = Calendar.getInstance();
 		threeDays.add(Calendar.DATE, -3);
 
-		processor = new ItemProcessor<List<JSONMessage>>() {
+		processor = new Processor<List<JSONMessage>>() {
 			@Override
 			public void processItem(List<JSONMessage> messages, boolean isNew) {
 				GUAntanamoMessaging.setCurrentFolder(state.folderName, messages);

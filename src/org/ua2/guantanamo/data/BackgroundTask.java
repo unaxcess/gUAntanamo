@@ -13,20 +13,27 @@ import android.util.Log;
 public abstract class BackgroundTask<T> {
 	
 	private enum State { RUNNING, READY, ERROR };
+
+	public interface Processor<T> {
+		public void processItem(T item);		
+	}
 	
 	protected abstract String getRunningMessage();
 	protected abstract String getErrorMessage();
 	
 	protected abstract T runItem() throws JSONException;
-
-	private static final String TAG = BackgroundTask.class.getName();
 	
 	private State state;
 	
 	private Context context;
+	private Processor<T> processor;
 	
+	private T value;
+
 	private Dialog dialog;
 	private Exception error;
+
+	private static final String TAG = BackgroundTask.class.getName();
 	
 	public BackgroundTask() {
 		Log.i(TAG, "Creating task " + getName());
@@ -40,7 +47,7 @@ public abstract class BackgroundTask<T> {
 		return getClass().getName();
 	}
 	
-	private void setContext(Context context) {
+	private void setContext(Context context, Processor<T> processor) {
 		synchronized(this) {
 			if(this.context != context) {
 				if(this.context != null) {
@@ -51,6 +58,8 @@ public abstract class BackgroundTask<T> {
 				
 				Log.i(TAG, "Attached context to " + getName());
 			}
+
+			this.processor = processor;
 		}
 	}
 	
@@ -79,7 +88,11 @@ public abstract class BackgroundTask<T> {
 		dialog = null;
 	}
 	
-	protected abstract void doReady();
+	protected void doReady() {
+		if(processor != null) {
+			processor.processItem(value);
+		}
+	}
 	
 	private void doError() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -93,9 +106,9 @@ public abstract class BackgroundTask<T> {
 		dialog.show();
 	}
 	
-	public void attach(Context context) {
+	public void attach(Context context, Processor<T> processor) {
 		synchronized(this) {
-			setContext(context);
+			setContext(context, processor);
 			
 			Log.i(TAG, "Checking state " + state + " of " + getName());
 			if(state == State.RUNNING) {
@@ -111,9 +124,9 @@ public abstract class BackgroundTask<T> {
 		}
 	}
 	
-	protected void _run(Context context) {
+	protected void _run(Context context, Processor<T> processor) {
 		synchronized(this) {
-			setContext(context);
+			setContext(context, processor);
 			
 			if(state == State.RUNNING) {
 				return;
@@ -130,7 +143,7 @@ public abstract class BackgroundTask<T> {
 				try {
 					Log.d(TAG, "Running");
 					long runStart = System.currentTimeMillis();
-					runItem();
+					value = runItem();
 					Log.d(TAG, "Ran on " + getName() + " in " + (System.currentTimeMillis() - runStart) + " ms");
 				} catch(Exception e) {
 					Log.e(TAG, getName() + " failed", e);

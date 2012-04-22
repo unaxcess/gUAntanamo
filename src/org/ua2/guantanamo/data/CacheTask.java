@@ -16,7 +16,11 @@ import android.util.Log;
 
 public abstract class CacheTask<T> {
 	
-	private enum State { LOADING, READY, ERROR };
+	private enum State { RUNNING, READY, ERROR };
+
+	public interface Processor<T> {
+		public void processItem(T item, boolean isNew);		
+	}
 	
 	protected abstract String getType();
 	protected abstract String getDescription();
@@ -25,8 +29,9 @@ public abstract class CacheTask<T> {
 	protected abstract T loadItem(String id) throws JSONException;
 	protected abstract T convertDataToItem(String data) throws JSONException;
 
-	public interface ItemProcessor<T> {
-		public void processItem(T item, boolean isNew);		
+	protected String convertItemToData(T item) throws JSONException {
+		return item.toString();
+				
 	}
 	
 	private static class CacheValue<T> {
@@ -44,19 +49,19 @@ public abstract class CacheTask<T> {
 		}
 	}
 	
-	private static Map<String, CacheValue> cacheMap = new ConcurrentHashMap<String, CacheValue>();
-	
-	private static final String TAG = CacheTask.class.getName();
-	
 	private State state;
 	
 	private Context context;
 	private DatabaseHelper helper;
-	private ItemProcessor<T> processor;
+	private Processor<T> processor;
 	
 	private Dialog dialog;
 	private CacheValue<T> value;
 	private Exception error;
+	
+	private static Map<String, CacheValue> cacheMap = new ConcurrentHashMap<String, CacheValue>();
+	
+	private static final String TAG = CacheTask.class.getName();
 	
 	public CacheTask() {
 		Log.i(TAG, "Creating task " + getName());
@@ -70,7 +75,7 @@ public abstract class CacheTask<T> {
 		return getClass().getName() + ":" + getType();
 	}
 	
-	private void setContext(Context context, ItemProcessor<T> processor) {
+	private void setContext(Context context, Processor<T> processor) {
 		synchronized(this) {
 			if(this.context != context) {
 				if(this.context != null) {
@@ -87,27 +92,27 @@ public abstract class CacheTask<T> {
 		}
 	}
 	
-	private void showLoader() {
+	private void showRunner() {
 		if(dialog != null) {
-			Log.d(TAG, "Not showing loader", new Throwable());
+			Log.d(TAG, "Not showing runner", new Throwable());
 			return;
 		}
 		
 		if(context == null) {
-			Log.i(TAG, "Can't show loader, no context for " + getName());
+			Log.i(TAG, "Can't show runner, no context for " + getName());
 			return;
 		}
 		
-		Log.i(TAG, "Showing loader for " + getName());
+		Log.i(TAG, "Showing runner for " + getName());
 		dialog = ProgressDialog.show(context, "", "Loading " + getDescription() + "...", true);
 	}
 	
-	private void hideLoader() {
+	private void hideRunner() {
 		if(dialog == null) {
 			return;
 		}
 		
-		Log.i(TAG, "Hiding loader for " + getName());
+		Log.i(TAG, "Hiding runner for " + getName());
 		dialog.dismiss();
 		dialog = null;
 	}
@@ -128,7 +133,7 @@ public abstract class CacheTask<T> {
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		builder.setMessage("Cannot load " + getDescription() + ", " + error.getMessage()).setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-				hideLoader();
+				hideRunner();
 			}
 		});
 		
@@ -136,13 +141,13 @@ public abstract class CacheTask<T> {
 		dialog.show();
 	}
 	
-	public void attach(Context context, ItemProcessor<T> processor) {
+	public void attach(Context context, Processor<T> processor) {
 		synchronized(this) {
 			setContext(context, processor);
 			
 			Log.i(TAG, "Checking state " + state + " of " + getName());
-			if(state == State.LOADING) {
-				showLoader();
+			if(state == State.RUNNING) {
+				showRunner();
 				
 			} else if(state == State.READY) {
 				doReady();
@@ -154,15 +159,13 @@ public abstract class CacheTask<T> {
 		}
 	}
 	
-	protected void _load(Context context, ItemProcessor<T> processor, final String id, final boolean forceRefresh) {
+	protected void _load(Context context, Processor<T> processor, final String id, final boolean forceRefresh) {
 		synchronized(this) {
 			setContext(context, processor);
 			
-			if(state == State.LOADING) {
+			if(state == State.RUNNING) {
 				return;
 			}
-			
-			state = State.LOADING;
 
 			String key = getType();
 			if(id != null) {
@@ -188,9 +191,11 @@ public abstract class CacheTask<T> {
 				value.data = null;
 				value.item = null;
 			}
+			
+			state = State.RUNNING;
 		}
 		
-		showLoader();
+		showRunner();
 		
 		AsyncTask<Object, Object, Object> task = new AsyncTask<Object, Object, Object>() {
 			@Override
@@ -200,23 +205,19 @@ public abstract class CacheTask<T> {
 							|| (getRefreshMinutes() != -1 && value.lastUpdate.getTime() < System.currentTimeMillis() - 60000 * getRefreshMinutes())
 							|| value.data == null) {
 						
-						if(isLoadable()) {
-							Log.d(TAG, "Loading " + value.id);
-							long loadStart = System.currentTimeMillis();
-							value.item = loadItem(value.id);
-							Log.d(TAG, "Loaded " + value.id + " on " + getName() + " in " + (System.currentTimeMillis() - loadStart) + " ms");
-							
-							Log.d(TAG, "Loading " + value.id);
-							long convertStart = System.currentTimeMillis();
-							value.data = convertItemToData(value.item);
-							Log.d(TAG, "Loaded " + value.id + " on " + getName() + " in " + (System.currentTimeMillis() - convertStart) + " ms");
-							
-							value.lastUpdate = new Date();
-							
-							value.isNew = true;
-						} else {
-							// TODO: Can't get the value
-						}
+						Log.d(TAG, "Running " + value.id);
+						long runStart = System.currentTimeMillis();
+						value.item = loadItem(value.id);
+						Log.d(TAG, "Ran " + value.id + " on " + getName() + " in " + (System.currentTimeMillis() - runStart) + " ms");
+						
+						Log.d(TAG, "Converting " + value.id);
+						long convertStart = System.currentTimeMillis();
+						value.data = convertItemToData(value.item);
+						Log.d(TAG, "Converted " + value.id + " on " + getName() + " in " + (System.currentTimeMillis() - convertStart) + " ms");
+						
+						value.lastUpdate = new Date();
+						
+						value.isNew = true;
 					}
 					
 					if(value.item == null) {
@@ -246,7 +247,7 @@ public abstract class CacheTask<T> {
 					}
 				}
 			
-				hideLoader();
+				hideRunner();
 					
 				if(state == State.READY) {
 					doReady();
@@ -272,16 +273,7 @@ public abstract class CacheTask<T> {
 			
 			processor = null;
 			
-			hideLoader();
+			hideRunner();
 		}
-	}
-
-	protected String convertItemToData(T item) throws JSONException {
-		return item.toString();
-				
-	}
-
-	public static boolean isLoadable() {
-		return true;
 	}
 }

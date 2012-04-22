@@ -4,7 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.data.CacheTask;
-import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
+import org.ua2.guantanamo.data.CacheTask.Processor;
 import org.ua2.json.JSONWrapper;
 
 import android.app.Activity;
@@ -48,7 +48,7 @@ public class BannerActivity extends Activity {
 			return JSONWrapper.parse(data).getObject();
 		}
 		
-		public void load(Context context, ItemProcessor<JSONObject> processor) {
+		public void load(Context context, Processor<JSONObject> processor) {
 			super._load(context, processor, null, false);
 		}
 	};
@@ -56,7 +56,7 @@ public class BannerActivity extends Activity {
 	private TextView bannerText;
 	private int bannerHash;
 
-	private ItemProcessor<JSONObject> processor = null;
+	private Processor<JSONObject> processor = null;
 
 	private static class State {
 		CacheSystem caller;
@@ -83,7 +83,7 @@ public class BannerActivity extends Activity {
 		
 		bannerHash = getPreferences(MODE_PRIVATE).getInt(PREFERENCE, 0);
 		
-		processor = new ItemProcessor<JSONObject>() {
+		processor = new Processor<JSONObject>() {
 			@Override
 			public void processItem(JSONObject system, boolean isNew) {
 				showBanner(system);

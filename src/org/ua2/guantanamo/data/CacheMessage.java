@@ -33,11 +33,11 @@ public class CacheMessage extends CacheTask<JSONMessage> {
 		return new JSONMessage(JSONWrapper.parse(data).getObject());
 	}
 	
-	public void load(Context context, ItemProcessor<JSONMessage> processor, int id, boolean refresh) {
+	public void load(Context context, Processor<JSONMessage> processor, int id, boolean refresh) {
 		super._load(context, processor, Integer.toString(id), refresh);
 	}
 
-	public void load(Context context, ItemProcessor<JSONMessage> processor, int id) {
+	public void load(Context context, Processor<JSONMessage> processor, int id) {
 		super._load(context, processor, Integer.toString(id), false);
 	}
 }

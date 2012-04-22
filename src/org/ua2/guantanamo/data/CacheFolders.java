@@ -58,7 +58,7 @@ public class CacheFolders extends CacheTask<Collection<JSONFolder>> {
 		return JSONItem.collectionToString(folders);
 	}
 	
-	public void load(Context context, ItemProcessor<Collection<JSONFolder>> processor, boolean refresh) {
+	public void load(Context context, Processor<Collection<JSONFolder>> processor, boolean refresh) {
 		super._load(context, processor, null, refresh);
 	}
 }

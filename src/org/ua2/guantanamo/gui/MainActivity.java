@@ -9,7 +9,7 @@ import org.ua2.guantanamo.GUAntanamoClient;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.ViewMode;
 import org.ua2.guantanamo.data.CacheFolders;
-import org.ua2.guantanamo.data.CacheTask.ItemProcessor;
+import org.ua2.guantanamo.data.CacheTask.Processor;
 import org.ua2.json.JSONFolder;
 
 import android.app.ListActivity;
@@ -47,7 +47,7 @@ public class MainActivity extends ListActivity {
 		}
 	}
 	
-	private ItemProcessor<Collection<JSONFolder>> processor;
+	private Processor<Collection<JSONFolder>> processor;
 
 	private static class State {
 		CacheFolders caller;
@@ -70,7 +70,7 @@ public class MainActivity extends ListActivity {
 
 		setContentView(R.layout.main);
 
-		processor = new ItemProcessor<Collection<JSONFolder>>() {
+		processor = new Processor<Collection<JSONFolder>>() {
 			@Override
 			public void processItem(Collection<JSONFolder> folders, boolean isNew) {
 				GUAntanamoMessaging.setFolders(folders, isNew);
