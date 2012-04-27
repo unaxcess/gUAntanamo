@@ -4,8 +4,9 @@
     <item android:title="@string/refresh" android:id="@+id/mainRefresh" />
     <item android:title="@string/unread" android:id="@+id/mainUnread" android:icon="@drawable/ic_menu_sun" />
     <item android:title="@string/subscribed" android:id="@+id/mainSubscribed" android:icon="@drawable/ic_menu_largetiles" />
+    <item android:title="@string/saves" android:id="@+id/mainSaves" android:icon="@drawable/ic_menu_tag" />
     <item android:title="@string/post" android:id="@+id/mainPost" android:icon="@drawable/ic_menu_wizard" />
-    <item android:id="@+id/mainPage" android:title="@string/page" android:icon="@drawable/ic_menu_dialog" />
+    <item android:title="@string/page" android:id="@+id/mainPage" android:icon="@drawable/ic_menu_dialog" />
     <item android:title="@string/all" android:id="@+id/mainAll" android:icon="@drawable/ic_menu_smalltiles" />
     <item android:title="@string/settings" android:id="@+id/mainSettings" android:icon="@drawable/ic_menu_settings" />
 </menu>

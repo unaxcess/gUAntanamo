@@ -10,7 +10,9 @@ import org.ua2.guantanamo.GUAntanamo;
 import org.ua2.guantanamo.GUAntanamoMessaging;
 import org.ua2.guantanamo.GUAntanamoMessaging.MessagingThread;
 import org.ua2.guantanamo.ViewMode;
+import org.ua2.guantanamo.data.CacheFolderMessages;
 import org.ua2.guantanamo.data.CacheMessages;
+import org.ua2.guantanamo.data.CacheSavedMessages;
 import org.ua2.guantanamo.data.CacheTask.Processor;
 import org.ua2.json.JSONFolder;
 import org.ua2.json.JSONMessage;
@@ -66,7 +68,9 @@ public class FolderActivity extends ListActivity {
 	private Processor<List<JSONMessage>> processor;
 
 	private static class State {
+		boolean saves;
 		String folderName;
+		
 		CacheMessages caller;
 	}
 	
@@ -84,7 +88,9 @@ public class FolderActivity extends ListActivity {
 		detector = new GestureDetector(new NavGestureDetector(metrics.widthPixels / 2, -1) {
 			@Override
 			protected void performAction(NavType direction) {
-				showFolder(direction, false);
+				if(!state.saves) {
+					showFolder(direction, false);
+				}
 			}
 		});
 
@@ -120,10 +126,25 @@ public class FolderActivity extends ListActivity {
 		state = (State)getLastNonConfigurationInstance();
 		if(state == null) {
 			state = new State();
-			
+		
+			state.saves = getIntent().getBooleanExtra("saves", false);
 			state.folderName = getIntent().getStringExtra("folder");
-			state.caller = new CacheMessages();
-			state.caller.load(this, processor, state.folderName, false);
+			
+			if(state.saves) {
+				state.caller = new CacheSavedMessages();
+			} else {
+				state.caller = new CacheFolderMessages();
+			}
+
+			loadMessages(state.folderName, false);
+		}
+	}
+	
+	private void loadMessages(String folderName, boolean refresh) {
+		if(state.saves) {
+			((CacheSavedMessages)state.caller).load(this, processor, refresh);
+		} else {
+			((CacheFolderMessages)state.caller).load(this, processor, folderName, refresh);
 		}
 	}
 
@@ -151,7 +172,7 @@ public class FolderActivity extends ListActivity {
 			return;
 		}
 		
-		state.caller.load(this, processor, folder.getName(), refresh);
+		loadMessages(folder.getName(), refresh);
 	}
 
 	private void showFolder() {

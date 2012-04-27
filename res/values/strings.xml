@@ -6,7 +6,6 @@
     <string name="cancel">Cancel</string>
     <string name="catchup">Catchup</string>
     <string name="folder">Folder</string>
-    <string name="hold">Hold</string>
     <string name="no_folders">No folders</string>
     <string name="no_messages">No messages</string>
     <string name="ok">OK</string>
@@ -21,6 +20,7 @@
     <string name="url">URL</string>
     <string name="username">Username</string>
     <string name="save">Save</string>
+    <string name="saves">Saves</string>
     <string name="send">Send</string>
     <string name="threads">Thread List</string>
     <string name="messages">Message List</string>

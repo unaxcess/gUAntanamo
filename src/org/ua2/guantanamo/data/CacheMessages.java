@@ -8,25 +8,12 @@ import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.ua2.guantanamo.GUAntanamo;
-import org.ua2.guantanamo.ViewMode;
 import org.ua2.json.JSONItem;
 import org.ua2.json.JSONMessage;
 import org.ua2.json.JSONWrapper;
 
-import android.content.Context;
-
-public class CacheMessages extends CacheTask<List<JSONMessage>> {
-	@Override
-	protected String getType() {
-		return "messages";
-	}
-
-	@Override
-	protected String getDescription() {
-		return "folder";
-	}
-
-	private List<JSONMessage> convert(JSONArray array) throws JSONException {
+public abstract class CacheMessages extends CacheTask<List<JSONMessage>> {
+	protected List<JSONMessage> convert(JSONArray array) throws JSONException {
 		Map<Integer, JSONMessage> map = new TreeMap<Integer, JSONMessage>();
 		for(int index = 0; index < array.length(); index++) {
 			JSONMessage item = new JSONMessage(array.getJSONObject(index));
@@ -43,11 +30,6 @@ public class CacheMessages extends CacheTask<List<JSONMessage>> {
 	}
 
 	@Override
-	protected List<JSONMessage> loadItem(String id) throws JSONException {
-		return convert(GUAntanamo.getClient().getMessages(id, GUAntanamo.getViewMode(false) == ViewMode.Unread, false));
-	}
-
-	@Override
 	protected List<JSONMessage> convertDataToItem(String data) throws JSONException {
 		return convert(JSONWrapper.parse(data).getArray());
 	}
@@ -55,9 +37,5 @@ public class CacheMessages extends CacheTask<List<JSONMessage>> {
 	@Override
 	protected String convertItemToData(List<JSONMessage> messages) {
 		return JSONItem.collectionToString(messages);
-	}
-
-	public void load(Context context, Processor<List<JSONMessage>> processor, final String id, final boolean forceRefresh) {
-		super._load(context, processor, id, forceRefresh);
 	}
 }

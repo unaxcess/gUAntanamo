@@ -80,8 +80,6 @@ public class MessageViewActivity extends Activity {
 		saveProcessor = new BackgroundTask.Processor<JSONObject>() {
 			@Override
 			public void processItem(JSONObject item) {
-				setResult(RESULT_OK);
-				finish();
 			}
 		};
 		
@@ -273,8 +271,8 @@ public class MessageViewActivity extends Activity {
 			
 			startActivityForResult(intent, ACTIVITY_POST);
 
-		} else if(item.getItemId() == R.id.viewHold) {
-			holdMessage();
+		} else if(item.getItemId() == R.id.viewSave) {
+			saveMessage();
 
 		} else if(item.getItemId() == R.id.viewCatchup) {
 			catchupThread();
@@ -295,7 +293,7 @@ public class MessageViewActivity extends Activity {
 		}
 	}
 
-	private void holdMessage() {
+	private void saveMessage() {
 		state.save.run(this, saveProcessor, GUAntanamoMessaging.getCurrentMessage().getId());
 	}
 	
