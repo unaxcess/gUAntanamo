@@ -42,6 +42,10 @@ public class GUAntanamoMessaging {
 		public int getMessageCount() {
 			return messages.size();
 		}
+
+		public List<JSONMessage> getMessages() {
+			return messages;
+		}
 	}
 	
 	private static List<JSONFolder> folderList = new ArrayList<JSONFolder>();
@@ -53,6 +57,8 @@ public class GUAntanamoMessaging {
 	private static JSONMessage currentMessage = null;
 
 	private static Set<Integer> markedMessageIds = new HashSet<Integer>();
+
+	private static List<JSONMessage> savedMessages = new ArrayList<JSONMessage>();
 
 	private static final String TAG = GUAntanamoMessaging.class.getName();
 
@@ -93,6 +99,10 @@ public class GUAntanamoMessaging {
 			return null;
 		}
 		return currentFolder.folder;
+	}
+	
+	public static List<JSONMessage> getSavedMessages() {
+		return savedMessages;
 	}
 	
 	public static JSONFolder setCurrentFolder(NavType direction) {
@@ -183,7 +193,7 @@ public class GUAntanamoMessaging {
 		}
 		return currentFolder.threads;
 	}
-	
+
 	/**
 	 * Turn the flat message list into a list of lists.
 	 * The outer list is sorted according to user preference,
@@ -191,20 +201,20 @@ public class GUAntanamoMessaging {
 	 * 
 	 * Because the message list is cached there's the potential for the read counts to be out of date.
 	 * As such a set of read IDs is used to "correct" messages. This may lead to unexpected results
-	 * if messages have been held from elsewhere, but you can always force a refresh and the read IDs set
-	 * will be cleared down.
+	 * if messages have been read / unread from elsewhere, but you can always force a refresh
+	 * and the read IDs set will be cleared down.
 	 * 
 	 * @param name
 	 * @param messages
 	 */
 	public static JSONFolder setCurrentFolder(String name, List<JSONMessage> messages) {
-		int unread = 0;
-		
 		currentFolder = folderMap.get(name.toLowerCase());
 		if(currentFolder == null) {
 			JSONFolder folder = new JSONFolder(name);
 			currentFolder = getMessagingFolder(folder);
 		}
+		
+		int unread = 0;
 		
 		// First group them into threads
 		Map<Integer, MessagingThread> threads = new TreeMap<Integer, MessagingThread>();
@@ -249,6 +259,28 @@ public class GUAntanamoMessaging {
 		currentFolder.folder.setUnread(unread);
 		
 		return currentFolder.folder;
+	}
+
+	public static List<JSONMessage> setSavedMessages(List<JSONMessage> messages) {
+		savedMessages.clear();
+		savedMessages.addAll(messages);
+		
+		// TODO: Make this configurable (reverse-most-recent hard coded for now)
+		Collections.sort(savedMessages, new Comparator<JSONMessage>() {
+			@Override
+			public int compare(JSONMessage message1, JSONMessage message2) {
+				if(message1.getId() < message2.getId()) {
+					return 1;
+				} else if(message2.getId() < message1.getId()) {
+					return -1;
+				}
+				
+				return 0;
+			}
+			
+		});
+		
+		return savedMessages;
 	}
 	
 	public static JSONMessage getCurrentMessage() {
