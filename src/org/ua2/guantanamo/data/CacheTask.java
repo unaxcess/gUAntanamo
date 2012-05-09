@@ -268,7 +268,9 @@ public abstract class CacheTask<T> {
 			
 			context = null;
 			
-			helper.close();
+			if(helper != null) {
+				helper.close();
+			}
 			helper = null;
 			
 			processor = null;
