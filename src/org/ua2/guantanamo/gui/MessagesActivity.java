@@ -32,7 +32,7 @@ import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-public class FolderActivity extends ListActivity {
+public class MessagesActivity extends ListActivity {
 
 	private static final int ACTIVITY_MESSAGE = 1;
 	private static final int ACTIVITY_POST = 2;
@@ -61,7 +61,7 @@ public class FolderActivity extends ListActivity {
 		}
 
 		public String toString() {
-			return subject + " [" + datetime + ", " + count + "]";
+			return subject + " [" + datetime + (count > 0 ? ", " + count : "" ) + "]";
 		}
 	}
 	
@@ -76,7 +76,7 @@ public class FolderActivity extends ListActivity {
 	
 	private State state;
 	
-	private static final String TAG = FolderActivity.class.getName();
+	private static final String TAG = MessagesActivity.class.getName();
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -118,7 +118,11 @@ public class FolderActivity extends ListActivity {
 		processor = new Processor<List<JSONMessage>>() {
 			@Override
 			public void processItem(List<JSONMessage> messages, boolean isNew) {
-				GUAntanamoMessaging.setCurrentFolder(state.folderName, messages);
+				if(state.saves) {
+					GUAntanamoMessaging.setSavedMessages(messages);
+				} else {
+					GUAntanamoMessaging.setCurrentFolder(state.folderName, messages);
+				}
 				showFolder();
 			}
 		};
@@ -188,26 +192,37 @@ public class FolderActivity extends ListActivity {
 	}
 
 	private void showFolder() {
-		JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
-		
-		String title = folder.getName();
-		int unread = 0;
-		int count = folder.getCount();
-		if(count > 0) {
-			unread = folder.getUnread();
-			if(unread > 0) {
-				title += " (" + unread + " of " + count + ")";
-			} else {
-				title += " (" + count + ")";
+		if(state.saves) {
+			setTitle("Saved Messages");
+		} else {
+			JSONFolder folder = GUAntanamoMessaging.getCurrentFolder();
+			
+			String title = folder.getName();
+			int unread = 0;
+			int count = folder.getCount();
+			if(count > 0) {
+				unread = folder.getUnread();
+				if(unread > 0) {
+					title += " (" + unread + " of " + count + ")";
+				} else {
+					title += " (" + count + ")";
+				}
 			}
+
+			setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
 		}
-
-		setTitle(title + " [" + GUAntanamo.getViewMode(false).name() + "]");
-
+		
 		List<JSONDisplay> list = new ArrayList<JSONDisplay>();
-		for(MessagingThread thread : GUAntanamoMessaging.getCurrentThreads()) {
-			JSONMessage message = thread.getTopMessage();
-			addMessageToList(message, list, thread.getMessageCount());
+		if(state.saves) {
+			for(JSONMessage message : GUAntanamoMessaging.getSavedMessages()) {
+				addMessageToList(message, list, 0);
+			}
+		} else {
+			for(MessagingThread thread : GUAntanamoMessaging.getCurrentThreads()) {
+				for(JSONMessage message : thread.getMessages()) {
+					addMessageToList(message, list, 0);
+				}
+			}
 		}
 
 		setListAdapter(new ArrayAdapter<JSONDisplay>(this, android.R.layout.simple_list_item_1, list));

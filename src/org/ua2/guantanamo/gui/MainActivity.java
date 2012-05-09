@@ -18,15 +18,11 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -194,7 +190,6 @@ public class MainActivity extends ListActivity {
 
 		Intent intent = new Intent(this, FolderActivity.class);
 		intent.putExtra("folder", folder.getName());
-		intent.putExtra("viewType", "threads");
 		startActivityForResult(intent, ACTIVITY_FOLDER);
 	}
 
@@ -239,9 +234,8 @@ public class MainActivity extends ListActivity {
 			startActivityForResult(intent, ACTIVITY_POST);
 
 		} else if(item.getItemId() == R.id.mainSaves) {
-			Intent intent = new Intent(MainActivity.this, FolderActivity.class);
+			Intent intent = new Intent(MainActivity.this, MessagesActivity.class);
 			intent.putExtra("saves", true);
-			intent.putExtra("viewType", "messages");
 			startActivityForResult(intent, ACTIVITY_FOLDER);
 
 		} else {
