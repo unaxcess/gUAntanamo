@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/reply" android:id="@+id/viewReply" android:icon="@drawable/ic_menu_wizard" />
+    <item android:title="@string/reply" android:id="@+id/viewReply" android:icon="@drawable/ic_menu_compose" />
     <item android:id="@+id/viewCatchup" android:title="@string/catchup" android:icon="@drawable/ic_menu_tick" />
-    <item android:id="@+id/viewSave" android:title="@string/save" android:icon="@drawable/ic_menu_tag" />
-    <item android:title="@string/post" android:id="@+id/viewPost" android:icon="@drawable/ic_menu_wizard" />
+    <item android:id="@+id/viewSave" android:title="@string/save" android:icon="@drawable/ic_menu_save" />
+    <item android:title="@string/post" android:id="@+id/viewPost" android:icon="@drawable/ic_menu_compose" />
     <item android:title="@string/unread" android:id="@+id/viewUnread" android:icon="@drawable/ic_menu_sun" />
     <item android:title="@string/all" android:id="@+id/viewAll" android:icon="@drawable/ic_menu_smalltiles" />
     <item android:title="@string/refresh" android:id="@+id/viewRefresh" />
